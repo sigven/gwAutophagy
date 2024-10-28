@@ -66,15 +66,6 @@ clean_internal_gene_orfs <- function(dataset = NULL){
     dplyr::anti_join(
       merged_duplicate_mutants, by = "screen_id")
 
-  # dup_counts <-
-  #   plyr::count(id_map_final$sgd_id) |>
-  #   dplyr::filter(freq > 1)
-  # dups <- id_map_final |>
-  #   dplyr::semi_join(
-  #     dup_counts, by = c("sgd_id" = "x")) |>
-  #   dplyr::filter(!is.na(sgd_id)) |>
-  #   dplyr::arrange(sgd_id, nchar(screen_id))
-
   return(dataset_final)
 
 }
@@ -151,7 +142,7 @@ autophagy_competence_per_ko <- function(id, gw_autoph_data = NULL){
 
 #kinetic_response_per_ko
 kinetic_response_per_ko <- function(
-    id = "RTG3 YBL103C", gw_autoph_data = NULL){
+    id = "RTG3 / YBL103C", gw_autoph_data = NULL){
 
   y_pred <- gw_autoph_data$ds_curvefits |>
     dplyr::filter(primary_identifier == id)
@@ -441,15 +432,45 @@ autophagy_preds[['ds_parms_ctrs']] <- readxl::read_excel(
 autophagy_preds[['ds_parms_comb']] <- dplyr::bind_rows(
   autophagy_preds[['ds_parms']], autophagy_preds[['ds_parms_ctrs']])
 
+autophagy_preds2 <- list()
 for(elem in c('dnn','ds_curvefits','ds_parms','ds_parms_ctrs','ds_parms_comb')){
-  autophagy_preds[[elem]] <- clean_internal_gene_orfs(dataset = autophagy_preds[[elem]])
-  autophagy_preds[[elem]] <- map_yeast_gene_identifiers(screen_ids = autophagy_preds[[elem]])
+  autophagy_preds2[[elem]] <-
+    clean_internal_gene_orfs(dataset = autophagy_preds[[elem]])
+  autophagy_preds2[[elem]] <-
+    map_yeast_gene_identifiers(screen_ids = autophagy_preds2[[elem]])
+  if(elem != 'ds_parms_comb'){
+    autophagy_preds2[[elem]] <- autophagy_preds[[elem]] |>
+      dplyr::select(
+        -dplyr::any_of(c("sgd_id","entrezgene",
+                       "genename","alias_type","sgd_description")))
+  }
 }
+gene_info_kinetic <-
+  data.frame(
+    'orf_gene_id' = autophagy_preds[['ds_parms_comb']]$primary_identifier,
+    'genename' = autophagy_preds[['ds_parms_comb']]$genename,
+    'entrezgene' = autophagy_preds[['ds_parms_comb']]$entrezgene,
+    'screen_id' = autophagy_preds[['ds_parms_comb']]$screen_id,
+    'sgd_id' = autophagy_preds[['ds_parms_comb']]$sgd_id,
+    'Gene' = autophagy_preds[['ds_parms_comb']]$Gene,
+    'ORF' = autophagy_preds[['ds_parms_comb']]$ORF,
+    'Gene2' = autophagy_preds[['ds_parms_comb']]$Gene2,
+    'ORF2' = autophagy_preds[['ds_parms_comb']]$ORF2,
+    'primary_identifier' = autophagy_preds[['ds_parms_comb']]$primary_identifier,
+    'sgd_description' = autophagy_preds[['ds_parms_comb']]$sgd_description
+  ) |>
+  dplyr::distinct()
+
+autophagy_preds[['ds_parms_comb']] <- autophagy_preds[['ds_parms_comb']] |>
+  dplyr::select(
+    -dplyr::any_of(c("sgd_id","entrezgene",
+                     "genename","alias_type","sgd_description")))
+
 
 #IDs_unique <- gsub("NA ", "", unique(paste(df_DS_parms_comb$Gene,df_DS_parms_comb$ORF)))
 #IDs_unique <- gsub("NA / ", "", unique(paste(df_DS_parms_comb$Gene,df_DS_parms_comb$ORF, sep = " / ")))
 #gene_ids_kinetic <- data.frame('screen_id' = IDs_unique)
-gene_ids_kinetic <- data.frame('orf_gene_id' = unique(autophagy_preds[['ds_parms_comb']]$primary_identifier))
+#gene_ids_kinetic <- data.frame('orf_gene_id' = unique(autophagy_preds[['ds_parms_comb']]$primary_identifier))
 
 
 #Read Bayes factor data
@@ -465,25 +486,50 @@ bfactors_data[['repl']] <- readxl::read_excel(
   excel_file_bfactors, sheet = 4)
 bfactors_data[['temporal']] <- readxl::read_excel(
   excel_file_bfactors, sheet = 5)
-# df_BF_overall <- read_excel(
-#   excel_file_bfactors, sheet = 2)
-# df_BF_starv <- read_excel(
-#   excel_file_bfactors, sheet = 3)
-# df_BF_repl <- read_excel(
-#   excel_file_bfactors, sheet = 4)
-# df_BF_temporal <- read_excel(
-#   excel_file_bfactors, sheet = 5)
 
 
 for(elem in c('overall','starv','repl','temporal')){
-  bfactors_data[[elem]] <- clean_internal_gene_orfs(dataset = bfactors_data[[elem]])
-  bfactors_data[[elem]] <- map_yeast_gene_identifiers(screen_ids = bfactors_data[[elem]])
+  bfactors_data[[elem]] <- clean_internal_gene_orfs(
+    dataset = bfactors_data[[elem]])
+  bfactors_data[[elem]] <- map_yeast_gene_identifiers(
+    screen_ids = bfactors_data[[elem]])
+  if(elem != 'repl'){
+    bfactors_data[[elem]] <- bfactors_data[[elem]] |>
+      dplyr::select(
+        -dplyr::any_of(
+          c("sgd_id","entrezgene",
+            "genename","alias_type","sgd_description")))
+
+  }
 }
 
 #ID list
 #IDs_unique <- gsub("NA ", "", unique(paste(df_BF_repl$Gene,df_BF_repl$ORF)))
 #gene_ids_bf <- data.frame('id' = IDs_unique)
-gene_ids_bf <- data.frame('orf_gene_id' = unique(bfactors_data[['repl']]$primary_identifier))
+# gene_ids_bf <- data.frame(
+#   'orf_gene_id' = unique(bfactors_data[['repl']]$primary_identifier))
+
+gene_info_bf <-
+  data.frame(
+    'orf_gene_id' = bfactors_data[['repl']]$primary_identifier,
+    'genename' = bfactors_data[['repl']]$genename,
+    'entrezgene' = bfactors_data[['repl']]$entrezgene,
+    'screen_id' = bfactors_data[['repl']]$screen_id,
+    'sgd_id' = bfactors_data[['repl']]$sgd_id,
+    'Gene' = bfactors_data[['repl']]$Gene,
+    'ORF' = bfactors_data[['repl']]$ORF,
+    'Gene2' = bfactors_data[['repl']]$Gene2,
+    'ORF2' = bfactors_data[['repl']]$ORF2,
+    'primary_identifier' = bfactors_data[['repl']]$primary_identifier,
+    'sgd_description' = bfactors_data[['repl']]$sgd_description
+  ) |>
+  dplyr::distinct()
+
+bfactors_data[['repl']] <- bfactors_data[['repl']] |>
+  dplyr::select(
+    -dplyr::any_of(c("sgd_id","entrezgene",
+                     "genename","alias_type","sgd_description")))
+
 
 
 
@@ -514,7 +560,7 @@ gw_autoph_kinetic_plot_input <- list()
 gw_autoph_competence_plot_input <- list()
 
 i <- 1
-for(id in unique(gene_ids_kinetic$orf_gene_id)){
+for(id in unique(gene_info_kinetic$orf_gene_id)){
   gw_autoph_kinetic_plot_input[[id]] <-
     kinetic_response_per_ko(id = id, gw_autoph_data = gw_autoph_data)
   if(i %% 100 == 0){
@@ -525,7 +571,7 @@ for(id in unique(gene_ids_kinetic$orf_gene_id)){
 }
 
 i <- 1
-for(id in unique(gene_ids_bf$orf_gene_id)){
+for(id in unique(gene_info_bf$orf_gene_id)){
   gw_autoph_competence_plot_input[[id]] <-
     autophagy_competence_per_ko(id = id, gw_autoph_data = gw_autoph_data)
   if(i %% 100 == 0){
@@ -535,32 +581,94 @@ for(id in unique(gene_ids_bf$orf_gene_id)){
   i <- i + 1
 }
 
+ortholog_links <- readRDS(
+  file="data-raw/yeast_ortholog_map.rds") |>
+  tidyr::separate(
+    value, c("entrez_human","symbol",
+             "orthology_support","orthology_match",
+             "primary_match"),sep="\\|", remove=F) |>
+  dplyr::mutate(
+    entrez_link = dplyr::if_else(
+      primary_match == "Yes",
+      paste0(
+        "<b><a href='https://www.ncbi.nlm.nih.gov/gene/",
+        entrez_human,"' target='_blank'>",
+        symbol,"</a></b>"),
+      paste0(
+        "<a href='https://www.ncbi.nlm.nih.gov/gene/",
+        entrez_human,"' target='_blank'>",
+        symbol,"</a>")
+      )
+  ) |>
+  dplyr::select(
+    -dplyr::any_of(c("value","entrez_human","symbol",
+                     "orthology_support","orthology_match",
+                     "primary_match"))) |>
+  dplyr::group_by(entrezgene) |>
+  dplyr::summarise(
+    human_ortholog_links = paste0(entrez_link, collapse = " | "),
+    .groups = "drop") |>
+  dplyr::mutate(human_ortholog_links = paste0(
+    human_ortholog_links, " (Alliance of Genome Resources)")) |>
+  dplyr::distinct() |>
+  dplyr::mutate(entrezgene = as.numeric(entrezgene))
+
+gene_info_kinetic <- gene_info_kinetic |>
+  dplyr::left_join(ortholog_links,
+                   by=c("entrezgene"="entrezgene")) |>
+  dplyr::mutate(
+    human_ortholog_links = dplyr::if_else(
+      is.na(human_ortholog_links),
+      paste0(
+        "<i>No data on human orthologs available ",
+        "(Alliance of Genome Resources)</i>."),
+      human_ortholog_links)
+  ) |>
+  dplyr::mutate(sgd_description = stringr::str_replace_all(
+    sgd_description,"\\. Orthologous to .+\\.$","."))
+
+
+gene_info_bf <- gene_info_bf |>
+  dplyr::left_join(ortholog_links,
+                   by=c("entrezgene"="entrezgene")) |>
+  dplyr::mutate(
+    human_ortholog_links = dplyr::if_else(
+      is.na(human_ortholog_links),
+      paste0(
+        "<i>No data on human orthologs available ",
+        "(Alliance of Genome Resources)</i>."),
+      human_ortholog_links)
+  ) |>
+  dplyr::mutate(sgd_description = stringr::str_replace_all(
+    sgd_description,"\\. Orthologous to .+\\.$","."))
+
+
 saveRDS(gw_autoph_competence_plot_input, file.path(
-  here::here(), "data","processed2","gw_autoph_competence_plot_input.rds"))
+  here::here(), "data","processed","gw_autoph_competence_plot_input.rds"))
 saveRDS(gw_autoph_kinetic_plot_input, file.path(
-  here::here(), "data","processed2","gw_autoph_kinetic_plot_input.rds"))
+  here::here(), "data","processed","gw_autoph_kinetic_plot_input.rds"))
 fst::write_fst(
-  autophagy_preds$dnn, file.path(here::here(), "data","processed2","dnn_preds.fst"))
+  autophagy_preds$dnn, file.path(here::here(), "data","processed","dnn_preds.fst"))
 fst::write_fst(
-  autophagy_preds$ds_curvefits, file.path(here::here(), "data","processed2","ds_curvefits.fst"))
+  autophagy_preds$ds_curvefits, file.path(here::here(), "data","processed","ds_curvefits.fst"))
 fst::write_fst(
-  autophagy_preds$ds_parms, file.path(here::here(), "data","processed2","ds_parms.fst"))
+  autophagy_preds$ds_parms, file.path(here::here(), "data","processed","ds_parms.fst"))
 fst::write_fst(
-  autophagy_preds$ds_parms_ctrs, file.path(here::here(), "data","processed2","ds_parms_ctrs.fst"))
+  autophagy_preds$ds_parms_ctrs, file.path(here::here(), "data","processed","ds_parms_ctrs.fst"))
 fst::write_fst(
-  gw_autoph_data$regr_df_all, file.path(here::here(), "data","processed2","regr_df_all.fst"))
+  gw_autoph_data$regr_df_all, file.path(here::here(), "data","processed","regr_df_all.fst"))
 fst::write_fst(
-  gene_ids_kinetic, file.path(here::here(), "data","processed2","gene_ids_kinetic.fst"))
+  gene_info_kinetic, file.path(here::here(), "data","processed","gene_info_kinetic.fst"))
 
 fst::write_fst(
-  gene_ids_bf, file.path(here::here(), "data","processed2","gene_ids_bf.fst"))
+  gene_info_bf, file.path(here::here(), "data","processed","gene_info_bf.fst"))
 fst::write_fst(
-  gw_autoph_data$BF_overall, file.path(here::here(), "data","processed2","BF_overall.fst"))
+  gw_autoph_data$BF_overall, file.path(here::here(), "data","processed","BF_overall.fst"))
 fst::write_fst(
-  gw_autoph_data$BF_starv, file.path(here::here(), "data","processed2","BF_starv.fst"))
+  gw_autoph_data$BF_starv, file.path(here::here(), "data","processed","BF_starv.fst"))
 fst::write_fst(
-  gw_autoph_data$BF_starv, file.path(here::here(), "data","processed2","BF_repl.fst"))
+  gw_autoph_data$BF_starv, file.path(here::here(), "data","processed","BF_repl.fst"))
 fst::write_fst(
-  gw_autoph_data$BF_temporal, file.path(here::here(), "data","processed2","BF_temporal.fst"))
+  gw_autoph_data$BF_temporal, file.path(here::here(), "data","processed","BF_temporal.fst"))
 
 

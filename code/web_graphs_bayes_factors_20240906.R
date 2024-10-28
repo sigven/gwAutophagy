@@ -160,6 +160,24 @@ mat_select$Y <- mat_select[,Y]
 
 mat$Type <- df_DNN_preds$Type[match(paste(mat$Gene, mat$ORF),paste(df_DNN_preds$Gene, df_DNN_preds$ORF))]
 
+#Dot plots
+lab_x <- ""
+lab_y <- ""
+if(grepl("VAM6.ATG1", X, fixed = T)){
+  lab_x <- "Autophagosome formation"
+}else if(grepl("WT.ATG1", X, fixed = T)){
+  lab_x <- "Overall autophagy"
+}else{
+  lab_x <- "Autophagosome clearance"
+}
+if(grepl("VAM6.ATG1", Y, fixed = T)){
+  lab_y <- "Autophagosome formation"
+}else if(grepl("WT.ATG1", Y, fixed = T)){
+  lab_y <- "Overall autophagy"
+}else{
+  lab_y <- "Autophagosome clearance"
+}
+
 
 ggplot(mat[is.na(mat$Plate_controls),], aes(X, Y))+
   geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8)+
@@ -175,7 +193,11 @@ ggplot(mat[is.na(mat$Plate_controls),], aes(X, Y))+
                   max.overlaps = Inf,
                   min.segment.length = 0,
                   segment.size = 0.3)+
-  labs(x=gsub("\\.",":",gsub("_"," ",X)), y=gsub("\\.",":",gsub("_"," ",Y)), color="Reference sets", linetype="Library")+
+  #labs(x=gsub("\\.",":",gsub("_"," ",X)), y=gsub("\\.",":",gsub("_"," ",Y)), color="Reference sets", linetype="Library")+
+  labs(x=paste0(
+    gsub("\\.",":",gsub("_"," ",X)),"\n",lab_x),
+    y=paste0(lab_y,"\n",gsub("\\.",":",gsub("_"," ",Y))),
+    color="Reference sets", linetype="Library")+
   scale_fill_jama()+
   scale_color_d3()+
   scale_linetype_manual(values=c(2,1))+

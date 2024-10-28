@@ -11,6 +11,7 @@ autophagy_competence_view[['single']] <-
   bslib::card(
     full_screen = TRUE,
     #bslib::card_header("Autophagy competence"),
+    shiny::htmlOutput("gene_info_bf"),
     shiny::plotOutput("autoph_competence")
   )
 autophagy_competence_view[['multiple']] <-
@@ -26,7 +27,7 @@ response_kinetics_view[['single']] <-
     full_screen = TRUE,
     bslib::card_header(
       shiny::textOutput("selected_gene")),
-    shiny::htmlOutput("gene_info"),
+    shiny::htmlOutput("gene_info_kinetic"),
     #bslib::card_header("Autophagy response kinetics"),
     shiny::plotOutput("autoph_response_kinetics")
   )
@@ -40,16 +41,9 @@ response_kinetics_view[['multiple']] <-
 kinetics_sidebar <-
   bslib::page_fillable(
     bslib::layout_sidebar(
-
-      # sidebar = shiny::selectizeInput(
-      #     inputId   = "gene_id_kinetic",
-      #     label     = "Gene",
-      #     choices   = unique(gw_autoph_competence_data$gene_ids),
-      # ),
-
       sidebar = shiny::selectInput(
         "gene_id_kinetic", "Select ORF/Gene mutant",
-        gw_autoph_response_data$gene_ids),
+        gw_autoph_response_data$gene_info_kinetic$orf_gene_id, selectize = T),
       response_kinetics_view[['single']],
       shiny::uiOutput("selected_gene")
     )
@@ -65,15 +59,36 @@ kinetics_sidebar_multiple <-
         options = list(
           minItems = 1,
           maxItems = 10),
-        choices = gw_autoph_response_data$gene_ids),
+        #selectize = T,
+        choices = gw_autoph_response_data$gene_info_kinetic$orf_gene_id),
       response_kinetics_view[['multiple']]
     )
   )
 
+# home_ui <- bslib::navset_card_pill(
+#   #height = 450,
+#   full_screen = TRUE,
+#   title = "",
+#   bslib::nav_panel(
+#     "About",
+#     bslib::card_title("About"),
+#     #plotly_widget
+#   ),
+#   bslib::nav_panel(
+#     "Downloads",
+#     bslib::card_title("Downloads"),
+#     #leaflet_widget
+#   ),
+#   # bslib::nav_panel(
+#   #   shiny::icon("circle-info"),
+#   #   shiny::markdown("Learn more about [htmlwidgets](http://www.htmlwidgets.org/)")
+#   # )
+# )
+
 about_page <-
   bslib::page_fillable(
+    #home_ui
     bslib::card(
-      #class = "bg-dark",
       full_screen = F,
       #bslib::card_header("About", class = "bg-primary text-white"),
       bslib::card_body(
@@ -99,8 +114,8 @@ bfactor_sidebar <-
     bslib::layout_sidebar(
       sidebar = list(
         shiny::selectInput(
-          "gene_id_bf", "Gene",
-          gw_autoph_competence_data$gene_ids),
+          "gene_id_bf", "Select ORF/Gene mutant",
+          gw_autoph_competence_data$gene_info_bf$orf_gene_id),
         shiny::selectInput(
           "bf_dnn_model", "Deep neural network (DNN) model",
           c("30","22")
@@ -110,9 +125,48 @@ bfactor_sidebar <-
     )
   )
 
-ui <- bslib::page_navbar(
-  #footer = list(shinyjs::useShinyjs(), shinyauthr::loginUI("login")),
-  theme = bslib::bs_theme(
+
+bfactor_sidebar_multiple <-
+  bslib::page_fillable(
+    bslib::layout_sidebar(
+      sidebar = list(
+        shiny::selectizeInput(
+          inputId = "gene_id_bf_multiple",
+          label = "Select ORF/Gene mutants (max 10)",
+          selected = NULL,
+          choices =
+            gw_autoph_competence_data$gene_info_bf$orf_gene_id,
+          options = list(
+            minItems = 1,
+            maxItems = 10)),
+        #shiny::selectInput(
+        #  "gene_id_bf_multiple", "Gene",
+        #  gw_autoph_competence_data$gene_info_bf$orf_gene_id),
+        shiny::selectInput(
+          "x_var","X-axis variable",
+          c("Overall autophagy",
+            "Autophagosome formation",
+            "Autophagosome clearance"),
+          selected = "Autophagosome formation"
+        ),
+        shiny::selectInput(
+          "y_var","Y-axis variable",
+          c("Overall autophagy",
+            "Autophagosome formation",
+            "Autophagosome clearance"),
+          selected = "Autophagosome clearance"
+        ),
+        shiny::selectInput(
+          "bf_dnn_model_multiple", "Deep neural network (DNN) model",
+          c("30","22")
+        )
+      ),
+      autophagy_competence_view[['multiple']]
+    )
+  )
+
+page_bs_theme <-
+  bslib::bs_theme(
     # Controls the default grayscale palette
     bg = "#ffffff",
     fg = "black",
@@ -123,13 +177,22 @@ ui <- bslib::page_navbar(
     bootswatch = "bootstrap",
     heading_font = "'Helvetica Neue', Helvetica, sans-serif",
     # Can also add lower-level customization
-    "input-border-color" = "#EA80FC"
-  ),
+    "input-border-color" = "#EA80FC")
+  # bslib::bs_add_rules(
+  #   rules = "navbar navbar-default {
+  #                       height: 400px;
+  #                       background-color: pink !important;
+  #               }"
+  # )
+
+ui <- bslib::page_navbar(
+  #footer = list(shinyjs::useShinyjs(), shinyauthr::loginUI("login")),
+  theme = page_bs_theme,
   #theme = bslib::bs_theme(
   #  bootswatch = "united",
   #  danger = "#343a40",
   #),
-  title = "Genome-Wide Autophagy Dynamics",
+  title = "Genome-Wide Autophagy Dynamics in Yeast",
   #subtitle = "A web portal for exploring autophagy dynamics in yeast",
   bslib::nav_spacer(),
   bslib::nav_panel("Home", about_page),
@@ -141,8 +204,8 @@ ui <- bslib::page_navbar(
   ),
   bslib::nav_menu(
     "Autophagy competence",
-    bslib::nav_panel("Single gene analysis", bfactor_sidebar)
-    #bslib::nav_panel("Multiple gene analysis", bfactor_sidebar)
+    bslib::nav_panel("Single gene analysis", bfactor_sidebar),
+    bslib::nav_panel("Multiple gene analysis", bfactor_sidebar_multiple)
   )
 
   #bslib::nav_item(tags$a("About", href = "https://posit.co")),
@@ -158,57 +221,56 @@ ui <- bslib::page_navbar(
 # New server logic (removes the `+ theme_bw()` part)
 server <- function(input, output, session) {
 
-  # #login status and info will be managed by shinyauthr module and stores here
-  # credentials <- shinyauthr::loginServer(
-  #     id = "login",
-  #     data = user_base,
-  #     user_col = user,
-  #     pwd_col = password,
-  #     sodium_hashed = T,
-  #     log_out = reactive(logout_init())
-  # )
-  #
-  # # call the logout module with reactive trigger to hide/show
-  # logout_init <- shinyauthr::logoutServer(
-  #     id = "logout",
-  #     active = reactive(credentials()$user_auth)
-  # )
-  #
-  # # this opens or closes the sidebar on login/logout
-  # observe({
-  #     if(credentials()$user_auth) {
-  #         shinyjs::removeClass(selector = "body", class = "sidebar")
-  #     } else {
-  #         shinyjs::addClass(selector = "body", class = "sidebar")
-  #     }
-  # })
-
   output$autoph_response_kinetics <- shiny::renderPlot({
-    #req(credentials()$user_auth)
     plot_response_kinetics(
       response_data = gw_autoph_response_data$per_ko[[input$gene_id_kinetic]])
   })
 
   output$autoph_response_kinetics_multiple <- shiny::renderPlot({
-    #req(credentials()$user_auth)
-    plot_response_kinetics_multiple(
+    plot_response_kinetics_multi(
       response_data = gw_autoph_response_data,
-      gene_ids = input$gene_id_kinetic_multiple)
+      primary_identifiers = input$gene_id_kinetic_multiple)
+  })
+
+  output$autoph_competence_multiple <- shiny::renderPlot({
+    plot_autophagy_competence_multi(
+      competence_data = gw_autoph_competence_data,
+      dnn_model = input$bf_dnn_model_multiple,
+      user_x = input$x_var,
+      user_y = input$y_var,
+      primary_identifiers = input$gene_id_bf_multiple)
   })
 
   output$autoph_competence <- shiny::renderPlot({
-    #req(credentials()$user_auth)
     plot_autophagy_competence(
       competence_data = gw_autoph_competence_data$per_ko[[input$gene_id_bf]],
       dnn_model = input$bf_dnn_model)
   })
 
   output$selected_gene <- shiny::renderText({
-    paste("You have selected", input$gene_id_kinetic)
+    paste(input$gene_id_kinetic)
   })
 
-  output$gene_info <- shiny::renderUI({
-    paste("<div><a href='https://www.vg.no'>VG</a></div>")
+  output$gene_info_kinetic <- shiny::renderUI({
+    ginf <- show_gene_info(
+      primary_id = input$gene_id_kinetic,
+      gene_info = gw_autoph_response_data$gene_info_kinetic
+    )
+    shiny::HTML("<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
+                "<li>Description: ",ginf[['description']],"</li>",
+                "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
+                "</ul></div><br>")
+  })
+
+  output$gene_info_bf <- shiny::renderUI({
+    ginf <- show_gene_info(
+      primary_id = input$gene_id_bf,
+      gene_info = gw_autoph_competence_data$gene_info_bf
+    )
+    shiny::HTML("<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
+                "<li>Description: ",ginf[['description']],"</li>",
+                "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
+                "</ul></div><br>")
   })
 
   # observe({

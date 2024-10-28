@@ -25,7 +25,8 @@ IDs_unique <- gsub("NA ", "", unique(paste(df_DS_parms_comb$Gene,df_DS_parms_com
 
 # Response kinetics----
 #Select ID
-id=IDs_unique[grep("RTG3",IDs_unique)]
+#id=IDs_unique[grep("RTG3",IDs_unique)]
+id=IDs_unique[grep("YEL074W",IDs_unique)]
 
 y_pred <- df_DS_curvefits %>% subset(gsub("NA ", "", paste(Gene, ORF)) == id)
 #If mutant in rec plate, only evaluate rec mutants
@@ -49,7 +50,8 @@ y_pred.ctr <- df_DS_curvefits[which(is.na(df_DS_curvefits$Plate_controls)),] %>%
   group_by(Time) %>%
   summarise(P1_30_fit=median(P1_30_fit))
 
-doubleSigmoidalModel <- regression.results[[which(grepl(gsub(" ", "", paste(y_pred$Plate, y_pred$Position)[1]),gsub(" ","",names(regression.results)), ignore.case = T))]]
+doubleSigmoidalModel <- regression.results[[which(grepl(gsub(" ", "", paste(
+  y_pred$Plate, y_pred$Position)[1]),gsub(" ","",names(regression.results)), ignore.case = T))]]
 
 
 ggplot()+

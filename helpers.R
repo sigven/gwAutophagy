@@ -5,58 +5,90 @@ library(matrixStats)
 library(reshape2)
 library(ggrepel)
 
-load_all_bf_data <- function(){
 
-  df_BF_overall <- fst::read_fst(
-    file.path(here::here(), "data","processed","df_BF_overall.fst"))
-  df_BF_starv <- fst::read_fst(
-    file.path(here::here(), "data","processed","df_BF_starv.fst"))
-  df_BF_repl <- fst::read_fst(
-    file.path(here::here(), "data","processed","df_BF_repl.fst"))
-  df_BF_temporal <- fst::read_fst(
-    file.path(here::here(), "data","processed","df_BF_temporal.fst"))
-  gene_ids_bf <- fst::read_fst(
-    file.path(here::here(), "data","processed","gene_ids_bf.fst"))
+show_gene_info <- function(primary_id = NULL,
+                           gene_info = NULL){
 
-  return(list(
-    df_BF_overall = df_BF_overall,
-    df_BF_starv = df_BF_starv,
-    df_BF_repl = df_BF_repl,
-    df_BF_temporal = df_BF_temporal,
-    gene_ids_bf = gene_ids_bf
-  ))
+  res <- list()
+  res[['name']] <- '<i>No information available</i>'
+  res[['human_orthologs']] <- '<i>No information available</i>'
+  res[['description']] <- ''
+  res[['sgd_link']] <- '<i>No information available</i>'
+  if(!is.null(primary_id) & !is.null(gene_info)){
+    gene_info_id <- gene_info |>
+      dplyr::filter(primary_identifier == primary_id)
+    if(NROW(gene_info_id) > 0){
+      res[['name']] <- gene_info_id$genename
+      res[['description']] <- gene_info_id$sgd_description
+      res[['human_orthologs']] <-
+        gene_info_id$human_ortholog_links
+      if(!is.na(gene_info_id$sgd_id)){
+        res[['sgd_link']] <- paste0(
+          "<a href='https://www.yeastgenome.org/locus/",
+          stringr::str_replace(
+            gene_info_id$sgd_id,"SGD:",""),
+            "' target='_blank'>",res[['name']],
+          "</a>")
+      }else{
+        res[['sgd_link']] <- res[['name']]
+      }
+    }
+  }
+  return(res)
 
 }
-load_all_response_data <- function(){
-
-  df_DNN_preds <- fst::read_fst(
-    file.path(here::here(), "data","processed","df_DNN_preds.fst"))
-  df_DS_curvefits <- fst::read_fst(
-    file.path(here::here(), "data","processed","df_DS_curvefits.fst"))
-  df_DS_parms <- fst::read_fst(
-    file.path(here::here(), "data","processed","df_DS_parms.fst"))
-  df_DS_parms_ctrs <- fst::read_fst(
-    file.path(here::here(), "data","processed","df_DS_parms_ctrs.fst"))
-  regr_df_all <- fst::read_fst(
-    file.path(here::here(), "data","processed","regr_df_all.fst"))
-  gene_ids_kinetic <- fst::read_fst(
-    file.path(here::here(), "data","processed","gene_ids_kinetic.fst"))
-
-
-
-  df_DS_parms_comb <- dplyr::bind_rows(
-    df_DS_parms,df_DS_parms_ctrs)
-
-  return(list(
-    df_DS_parms_comb = df_DS_parms_comb,
-    df_DNN_preds = df_DNN_preds,
-    df_DS_curvefits = df_DS_curvefits,
-    df_DS_parms = df_DS_parms,
-    df_DS_parms_ctrs = df_DS_parms_ctrs,
-    regr_df_all = regr_df_all,
-    gene_ids_kinetic = gene_ids_kinetic
-  ))
-}
+# load_all_bf_data <- function(){
+#
+#   df_BF_overall <- fst::read_fst(
+#     file.path(here::here(), "data","processed","df_BF_overall.fst"))
+#   df_BF_starv <- fst::read_fst(
+#     file.path(here::here(), "data","processed","df_BF_starv.fst"))
+#   df_BF_repl <- fst::read_fst(
+#     file.path(here::here(), "data","processed","df_BF_repl.fst"))
+#   df_BF_temporal <- fst::read_fst(
+#     file.path(here::here(), "data","processed","df_BF_temporal.fst"))
+#   gene_ids_bf <- fst::read_fst(
+#     file.path(here::here(), "data","processed","gene_ids_bf.fst"))
+#
+#   return(list(
+#     df_BF_overall = df_BF_overall,
+#     df_BF_starv = df_BF_starv,
+#     df_BF_repl = df_BF_repl,
+#     df_BF_temporal = df_BF_temporal,
+#     gene_ids_bf = gene_ids_bf
+#   ))
+#
+# }
+# load_all_response_data <- function(){
+#
+#   df_DNN_preds <- fst::read_fst(
+#     file.path(here::here(), "data","processed","df_DNN_preds.fst"))
+#   df_DS_curvefits <- fst::read_fst(
+#     file.path(here::here(), "data","processed","df_DS_curvefits.fst"))
+#   df_DS_parms <- fst::read_fst(
+#     file.path(here::here(), "data","processed","df_DS_parms.fst"))
+#   df_DS_parms_ctrs <- fst::read_fst(
+#     file.path(here::here(), "data","processed","df_DS_parms_ctrs.fst"))
+#   regr_df_all <- fst::read_fst(
+#     file.path(here::here(), "data","processed","regr_df_all.fst"))
+#   gene_ids_kinetic <- fst::read_fst(
+#     file.path(here::here(), "data","processed","gene_ids_kinetic.fst"))
+#
+#
+#
+#   df_DS_parms_comb <- dplyr::bind_rows(
+#     df_DS_parms,df_DS_parms_ctrs)
+#
+#   return(list(
+#     df_DS_parms_comb = df_DS_parms_comb,
+#     df_DNN_preds = df_DNN_preds,
+#     df_DS_curvefits = df_DS_curvefits,
+#     df_DS_parms = df_DS_parms,
+#     df_DS_parms_ctrs = df_DS_parms_ctrs,
+#     regr_df_all = regr_df_all,
+#     gene_ids_kinetic = gene_ids_kinetic
+#   ))
+# }
 
 
 load_kinetic_response_data <- function(){
@@ -77,17 +109,17 @@ load_kinetic_response_data <- function(){
   #   df_DS_parms,df_DS_parms_ctrs)
 
   df_DS_curvefits <- fst::read_fst(
-    file.path(here::here(), "data","processed2","ds_curvefits.fst"))
+    file.path(here::here(), "data","processed","ds_curvefits.fst"))
   df_DS_parms <- fst::read_fst(
-    file.path(here::here(), "data","processed2","ds_parms.fst"))
+    file.path(here::here(), "data","processed","ds_parms.fst"))
   df_DS_parms_ctrs <- fst::read_fst(
-    file.path(here::here(), "data","processed2","ds_parms_ctrs.fst"))
+    file.path(here::here(), "data","processed","ds_parms_ctrs.fst"))
   kinetic_response_plot_input <- readRDS(
-    file.path(here::here(), "data","processed2","gw_autoph_kinetic_plot_input.rds"))
-  gene_ids_kinetic <- fst::read_fst(
-    file.path(here::here(), "data","processed2","gene_ids_kinetic.fst"))
+    file.path(here::here(), "data","processed","gw_autoph_kinetic_plot_input.rds"))
+  gene_info_kinetic <- fst::read_fst(
+    file.path(here::here(), "data","processed","gene_info_kinetic.fst"))
   df_DNN_preds <- fst::read_fst(
-    file.path(here::here(), "data","processed2","dnn_preds.fst"))
+    file.path(here::here(), "data","processed","dnn_preds.fst"))
   df_DS_parms_comb <- dplyr::bind_rows(
     df_DS_parms,df_DS_parms_ctrs)
 
@@ -99,7 +131,7 @@ load_kinetic_response_data <- function(){
     ds_parms_comb = df_DS_parms_comb,
     dnn_preds = df_DNN_preds,
     per_ko = kinetic_response_plot_input,
-    gene_ids = gene_ids_kinetic
+    gene_info_kinetic = gene_info_kinetic
   ))
 
 }
@@ -118,40 +150,98 @@ load_autophagy_competence_data <- function(){
   #   file.path(here::here(), "data","processed","df_BF_temporal.fst"))
 
   autophagy_competence_plot_input <- readRDS(
-    file.path(here::here(), "data","processed2","gw_autoph_competence_plot_input.rds"))
-  gene_ids_bf <- fst::read_fst(
-    file.path(here::here(), "data","processed2","gene_ids_bf.fst"))
+    file.path(here::here(), "data","processed","gw_autoph_competence_plot_input.rds"))
+  gene_info_bf <- fst::read_fst(
+    file.path(here::here(), "data","processed","gene_info_bf.fst"))
   df_DNN_preds <- fst::read_fst(
-    file.path(here::here(), "data","processed2","dnn_preds.fst"))
+    file.path(here::here(), "data","processed","dnn_preds.fst"))
   df_BF_overall <- fst::read_fst(
-    file.path(here::here(), "data","processed2","BF_overall.fst"))
+    file.path(here::here(), "data","processed","BF_overall.fst"))
   df_BF_temporal <- fst::read_fst(
-    file.path(here::here(), "data","processed2","BF_temporal.fst"))
+    file.path(here::here(), "data","processed","BF_temporal.fst"))
 
   return(list(
     bf_overall = df_BF_overall,
     dnn_preds = df_DNN_preds,
     bf_temporal = df_BF_temporal,
     per_ko = autophagy_competence_plot_input,
-    gene_ids = gene_ids_bf
+    gene_info_bf = gene_info_bf
 
   ))
 
 }
 
-plot_autophagy_competence_multi <- function(competence_data = NULL,
-                                            ids = NULL){
+plot_autophagy_competence_multi <- function(
+    competence_data = NULL,
+    primary_identifiers = NULL,
+    dnn_model = "30",
+    user_x = "Autophagosome formation",
+    user_y = "Autophagosome clearance"){
 
   #Select x and y
   variables <- colnames(competence_data[['bf_overall']])[5:16]
-  X <- variables[3]
-  Y <- variables[2]
 
+
+  X <- variables[1]
+  Y <- variables[1]
+  if(dnn_model == "30"){
+    if(user_x == "Autophagosome formation"){
+      X <- variables[3]
+    }
+    if(user_x == "Autophagosome clearance"){
+      X <- variables[2]
+    }
+    if(user_y == "Autophagosome formation"){
+      Y <- variables[3]
+    }
+    if(user_y == "Autophagosome clearance"){
+      Y <- variables[2]
+    }
+  }
+
+  if(dnn_model == "22"){
+    if(user_x == "Autophagosome clearance"){
+      X <- variables[5]
+    }
+    if(user_x == "Autophagosome formation"){
+      X <- variables[6]
+    }
+    if(user_x == "Overall autophagy"){
+      X <- variables[4]
+    }
+    if(user_y == "Autophagosome clearance"){
+      Y <- variables[5]
+    }
+    if(user_y == "Autophagosome formation"){
+      Y <- variables[6]
+    }
+    if(user_y == "Overall autophagy"){
+      Y <- variables[4]
+    }
+  }
+
+  lab_x <- ""
+  lab_y <- ""
+  if(grepl("VAM6.ATG1", X, fixed = T)){
+    lab_x <- "Autophagosome formation"
+  }else if(grepl("WT.ATG1", X, fixed = T)){
+    lab_x <- "Overall autophagy"
+  }else{
+    lab_x <- "Autophagosome clearance"
+  }
+  if(grepl("VAM6.ATG1", Y, fixed = T)){
+    lab_y <- "Autophagosome formation"
+  }else if(grepl("WT.ATG1", Y, fixed = T)){
+    lab_y <- "Overall autophagy"
+  }else{
+    lab_y <- "Autophagosome clearance"
+  }
 
   Positions <- c()
-  for(i in ids){
+  for(i in primary_identifiers){
     BF_response <- competence_data[['bf_temporal']] |>
-      subset(gsub("NA ", "", paste(Gene, ORF)) == i)
+      dplyr::filter(primary_identifier == i)
+      #subset(gsub("NA ", "", paste(Gene, ORF)) == i)
     #If mutant in rec plate, only evaluate rec mutants
     if(any(grepl("Rec",BF_response$Plate))){
       BF_response <- BF_response[which(grepl("Rec",BF_response$Plate)),]
@@ -188,8 +278,8 @@ plot_autophagy_competence_multi <- function(competence_data = NULL,
       competence_data[['dnn_preds']]$ORF))]
 
 
-  ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
-    ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
+  p <- ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
+    ggplot2::geom_point(col="lightgray", size=0.9, pch=16, alpha=0.8) +
     # ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
     #                 aes(lty=Type), col="grey30", alpha=1) +
     ggplot2::stat_density_2d(data=mat[which(mat$Plate_controls=="+"),] |>
@@ -198,124 +288,147 @@ plot_autophagy_competence_multi <- function(competence_data = NULL,
                     geom = "polygon", col=NA) +
     ggplot2::geom_point(
       data=mat[which(!is.na(mat$Reference_sets) & !grepl("ORF",mat$Reference_sets)),],
-               ggplot2::aes(col=Reference_sets), size=1) +
+               ggplot2::aes(col=Reference_sets), size=1.3) +
     ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
     ggrepel::geom_text_repel(data=mat_select, ggplot2::aes(label=Gene),
-                    force=2, size=2.5,
+                    force=2, size=5,
                     max.overlaps = Inf,
                     min.segment.length = 0,
                     segment.size = 0.3) +
-    ggplot2::labs(
-      x=gsub("\\.",":",gsub("_"," ",X)),
-      y=gsub("\\.",":",gsub("_"," ",Y)),
-      color="Reference sets", linetype="Library") +
+    ggplot2::labs(x=paste0(
+      gsub("\\.",":",gsub("_"," ",X)),"\n",lab_x),
+      y=paste0(lab_y,"\n",gsub("\\.",":",gsub("_"," ",Y))),
+      color="Reference sets", linetype="Library")+
+    # ggplot2::labs(
+    #   x=gsub("\\.",":",gsub("_"," ",X)),
+    #   y=gsub("\\.",":",gsub("_"," ",Y)),
+    #   color="Reference sets", linetype="Library") +
     ggsci::scale_fill_jama() +
     ggsci::scale_color_d3() +
     ggplot2::scale_linetype_manual(values=c(2,1)) +
     ggplot2::theme_bw() +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-    guides(alpha = FALSE)
-
-  ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
-    ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
-    ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
-                    ggplot2::aes(), col="grey30", alpha=1) +
-    ggplot2::stat_density_2d(
-      data=mat[which(mat$Plate_controls=="+"),] |>
-        dplyr::mutate(Gene = ifelse(is.na(Gene), "WT", Gene)),
-      ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..), geom = "polygon", col=NA) +
-    ggplot2::geom_point(
-      data=mat[which(!is.na(mat$Reference_sets) &
-                       !grepl("ORF",mat$Reference_sets)),],
-      ggplot2::aes(col=Reference_sets), size=1) +
-    ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
-    geom_text_repel(data=mat_select,aes(label=Gene),
-                    force=2, size=2.5,
-                    max.overlaps = Inf,
-                    min.segment.length = 0,
-                    segment.size = 0.3) +
-    ggplot2::labs(x=gsub("\\.",":",
-                gsub("_"," ",X)),
-         y=gsub("\\.",":",gsub("_"," ",Y)),
-         color="Reference sets",
-         linetype="Library") +
-    ggsci::scale_fill_jama() +
-    ggsci::scale_color_d3() +
-    ggplot2::scale_linetype_manual(values=c(2,1)) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(panel.grid.major = element_blank(),
-                   panel.grid.minor = element_blank()) +
-    guides(alpha = FALSE)
-
-  ggplot(mat[is.na(mat$Plate_controls),], aes(X, Y)) +
-    ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
-    ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
-                    ggplot2::aes(), col="grey30", alpha=1) +
-    ggplot2::stat_density_2d(data=mat[!is.na(mat$Plate_controls) &
-                                        !is.na(mat$Gene) & mat$Gene != "WT",],
-                    ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
-                    geom = "polygon", col=NA) +
-    ggplot2::geom_point(data=mat[which(!is.na(mat$Reference_sets) &
-                                         !grepl("ORF",mat$Reference_sets)),],
-               ggplot2::aes(col=Reference_sets), size=1) +
-    ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
-    ggrepel::geom_text_repel(data=mat_select, ggplot2::aes(label=Gene),
-                    force=2, size=2.5,
-                    max.overlaps = Inf,
-                    min.segment.length = 0,
-                    segment.size = 0.3) +
-    ggplot2::labs(
-      x=gsub("\\.",":",gsub("_"," ",X)),
-      y=gsub("\\.",":",gsub("_"," ",Y)),
-      color="Reference sets") +
-    ggsci::scale_fill_jama() +
-    ggsci::scale_color_d3() +
-    ggplot2::theme_bw() +
-    ggplot2::theme(panel.grid.major = element_blank(),
-                   panel.grid.minor = element_blank()) +
-    guides(alpha = FALSE)
-
-  ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
-    ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
-    ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
-                    ggplot2::aes(lty=Type), col="grey30", alpha=1) +
-    ggplot2::stat_density_2d(data=mat[which(mat$Plate_controls=="+"),] |>
-                               dplyr::mutate(Gene = ifelse(is.na(Gene), "WT", Gene)),
-                    ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
-                    geom = "polygon", col=NA) +
-    ggplot2::geom_point(data=mat[which(!is.na(mat$Reference_sets) &
-                                         !grepl("ORF",mat$Reference_sets)),],
-               ggplot2::aes(col=Reference_sets), size=1) +
-    ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
-    ggrepel::geom_text_repel(data=mat_select,aes(label=Gene),
-                    force=2, size=2.5,
-                    max.overlaps = Inf,
-                    min.segment.length = 0,
-                    segment.size = 0.3) +
-    ggplot2::labs(
-      x=gsub("\\.",":",gsub("_"," ",X)),
-      y=gsub("\\.",":",gsub("_"," ",Y)),
-      color="Reference sets", linetype="Library") +
-    ggsci::scale_fill_jama() +
-    ggsci::scale_color_d3() +
-    ggplot2::scale_linetype_manual(values=c(2,1)) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank()) +
+    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+          panel.grid.minor = ggplot2::element_blank(),
+          legend.position = "top",
+          plot.margin = ggplot2::margin(2, 1, 2, 1, "cm"),
+          legend.text = ggplot2::element_text(size=16),
+          legend.title = ggplot2::element_text(size=18),
+          axis.title = ggplot2::element_text(size=18),
+          axis.text = ggplot2::element_text(size=18)) +
     ggplot2::guides(alpha = FALSE)
+
+  return(p)
+
+  # ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
+  #   ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
+  #   ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
+  #                   ggplot2::aes(), col="grey30", alpha=1) +
+  #   ggplot2::stat_density_2d(
+  #     data=mat[which(mat$Plate_controls=="+"),] |>
+  #       dplyr::mutate(Gene = ifelse(is.na(Gene), "WT", Gene)),
+  #     ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..), geom = "polygon", col=NA) +
+  #   ggplot2::geom_point(
+  #     data=mat[which(!is.na(mat$Reference_sets) &
+  #                      !grepl("ORF",mat$Reference_sets)),],
+  #     ggplot2::aes(col=Reference_sets), size=1) +
+  #   ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
+  #   geom_text_repel(data=mat_select,aes(label=Gene),
+  #                   force=2, size=4.2,
+  #                   max.overlaps = Inf,
+  #                   min.segment.length = 0,
+  #                   segment.size = 0.3) +
+  #   ggplot2::labs(x=gsub("\\.",":",
+  #               gsub("_"," ",X)),
+  #        y=gsub("\\.",":",gsub("_"," ",Y)),
+  #        color="Reference sets",
+  #        linetype="Library") +
+  #   ggsci::scale_fill_jama() +
+  #   ggsci::scale_color_d3() +
+  #   ggplot2::scale_linetype_manual(values=c(2,1)) +
+  #   ggplot2::theme_bw() +
+  #   ggplot2::theme(axis.title = ggplot2::element_text(size=16),
+  #                  axis.text = ggplot2::element_text(size=16),
+  #                  panel.grid.major = element_blank(),
+  #                  panel.grid.minor = element_blank()) +
+  #   guides(alpha = FALSE)
+  #
+  # ggplot(mat[is.na(mat$Plate_controls),], aes(X, Y)) +
+  #   ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
+  #   ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
+  #                   ggplot2::aes(), col="grey30", alpha=1) +
+  #   ggplot2::stat_density_2d(data=mat[!is.na(mat$Plate_controls) &
+  #                                       !is.na(mat$Gene) & mat$Gene != "WT",],
+  #                   ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
+  #                   geom = "polygon", col=NA) +
+  #   ggplot2::geom_point(data=mat[which(!is.na(mat$Reference_sets) &
+  #                                        !grepl("ORF",mat$Reference_sets)),],
+  #              ggplot2::aes(col=Reference_sets), size=1) +
+  #   ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
+  #   ggrepel::geom_text_repel(data=mat_select, ggplot2::aes(label=Gene),
+  #                   force=2, size=4.2,
+  #                   max.overlaps = Inf,
+  #                   min.segment.length = 0,
+  #                   segment.size = 0.3) +
+  #   ggplot2::labs(
+  #     x=gsub("\\.",":",gsub("_"," ",X)),
+  #     y=gsub("\\.",":",gsub("_"," ",Y)),
+  #     color="Reference sets") +
+  #   ggsci::scale_fill_jama() +
+  #   ggsci::scale_color_d3() +
+  #   ggplot2::theme_bw() +
+  #   ggplot2::theme(panel.grid.major = element_blank(),
+  #                  panel.grid.minor = element_blank()) +
+  #   guides(alpha = FALSE)
+  #
+  # ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
+  #   ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
+  #   ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
+  #                   ggplot2::aes(lty=Type), col="grey30", alpha=1) +
+  #   ggplot2::stat_density_2d(data=mat[which(mat$Plate_controls=="+"),] |>
+  #                              dplyr::mutate(Gene = ifelse(is.na(Gene), "WT", Gene)),
+  #                   ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
+  #                   geom = "polygon", col=NA) +
+  #   ggplot2::geom_point(data=mat[which(!is.na(mat$Reference_sets) &
+  #                                        !grepl("ORF",mat$Reference_sets)),],
+  #              ggplot2::aes(col=Reference_sets), size=1) +
+  #   ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
+  #   ggrepel::geom_text_repel(data=mat_select,aes(label=Gene),
+  #                   force=2, size=4.2,
+  #                   max.overlaps = Inf,
+  #                   min.segment.length = 0,
+  #                   segment.size = 0.3) +
+  #   ggplot2::labs(
+  #     x=gsub("\\.",":",gsub("_"," ",X)),
+  #     y=gsub("\\.",":",gsub("_"," ",Y)),
+  #     color="Reference sets", linetype="Library") +
+  #   ggsci::scale_fill_jama() +
+  #   ggsci::scale_color_d3() +
+  #   ggplot2::scale_linetype_manual(values=c(2,1)) +
+  #   ggplot2::theme_bw() +
+  #   ggplot2::theme(
+  #     axis.title = ggplot2::element_text(size=16),
+  #     axis.text = ggplot2::element_text(size=16),
+  #     legend.text = ggplot2::element_text(size=14),
+  #     legend.title = ggplot2::element_text(size=16),
+  #     panel.grid.major = element_blank(),
+  #     panel.grid.minor = element_blank()) +
+  #   ggplot2::guides(alpha = FALSE)
 
 
 
 }
 
 
-plot_autophagy_competence <- function(competence_data = NULL, dnn_model = "30"){
+plot_autophagy_competence <- function(competence_data = NULL,
+                                      dnn_model = "30"){
 
   p <- NULL
   if(dnn_model == "30"){
-    p <- ggplot2::ggplot(competence_data$BF_response,
-                         ggplot2::aes(log_BFt_VAM6.ATG1_30, log_BFt_WT.VAM6_30, col=TimeR)) +
+    p <- ggplot2::ggplot(
+      competence_data$BF_response,
+      ggplot2::aes(
+        log_BFt_VAM6.ATG1_30,
+        log_BFt_WT.VAM6_30, col=TimeR)) +
       ggplot2::geom_vline(xintercept = 0, lty=1, col="black", size=0.1) +
       ggplot2::geom_hline(yintercept = 0, lty=1, col="black", size=0.1) +
       scico::scale_color_scico(palette = 'lisbon') +
@@ -352,8 +465,11 @@ plot_autophagy_competence <- function(competence_data = NULL, dnn_model = "30"){
         strip.background = ggplot2::element_blank(),
         legend.position = "top")
   }else{
-    p <- ggplot2::ggplot(competence_data$BF_response,
-                         ggplot2::aes(log_BFt_VAM6.ATG1_22, log_BFt_WT.VAM6_22, col=TimeR)) +
+    p <- ggplot2::ggplot(
+      competence_data$BF_response,
+      ggplot2::aes(log_BFt_VAM6.ATG1_22,
+                   log_BFt_WT.VAM6_22,
+                   col=TimeR)) +
       ggplot2::geom_vline(
         xintercept = 0, lty=1, col="black", size=0.1) +
       ggplot2::geom_hline(
@@ -395,11 +511,12 @@ plot_autophagy_competence <- function(competence_data = NULL, dnn_model = "30"){
 
 }
 
-plot_response_kinetics_multiple <- function(response_data = NULL,
-                                            gene_ids = NULL,
-                                            Filter = TRUE,
-                                            show_stat_density = TRUE,
-                                            Value = "Perturbation"){
+plot_response_kinetics_multi <- function(
+    response_data = NULL,
+    primary_identifiers = NULL,
+    Filter = TRUE,
+    show_stat_density = TRUE,
+    Value = "Perturbation"){
 
   # Kinetic parameters
   #Select one or several IDs for text repel
@@ -410,7 +527,7 @@ plot_response_kinetics_multiple <- function(response_data = NULL,
   Y <- unique(response_data[['ds_parms']]$Parameter)[11]
 
   Positions <- c()
-  for(i in gene_ids){
+  for(i in primary_identifiers){
     y_pred <- response_data[['ds_curvefits']] |>
       dplyr::filter(primary_identifier == i)
       #subset(gsub("NA ", "", paste(Gene, ORF)) == i)
@@ -462,16 +579,17 @@ plot_response_kinetics_multiple <- function(response_data = NULL,
       response_data[['dnn_preds']]$ORF))]
 
   p <- ggplot2::ggplot(mat, ggplot2::aes(X, Y))+
-    ggplot2::geom_point(col="lightgray", size=1.2, pch=19, alpha=0.8)+
+    ggplot2::geom_point(col="lightgray", size=1.4, pch=19, alpha=0.8)+
     ggplot2::geom_point(
       data=mat[which(!is.na(mat$Reference_sets)),],
-      ggplot2::aes(col=Reference_sets), size=1)+
+      ggplot2::aes(col=Reference_sets), size=1.5)+
     ggplot2::geom_point(
       data=mat_select, ggplot2::aes(), pch=19)+
     ggrepel::geom_text_repel(
       data=mat_select,
       ggplot2::aes(label=Gene),
-      force=2, size=4.2,
+      force=2, size=5.5,
+      nudge_x = 0.3, nudge_y = 0.3,
       max.overlaps = Inf,
       min.segment.length = 0,
       segment.size = 0.9)+
@@ -480,8 +598,10 @@ plot_response_kinetics_multiple <- function(response_data = NULL,
     ggplot2::labs(x=X, y=Y) +
     ggsci::scale_fill_jama() +
     ggsci::scale_color_d3() +
-    ggplot2::theme_bw(base_size = 17, base_family = "Helvetica") +
+    ggplot2::theme_bw(base_size = 18, base_family = "Helvetica") +
     ggplot2::theme(
+      plot.margin = ggplot2::margin(1, 1, 1, 1, "cm"),
+      legend.position = "top",
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank())
 
@@ -674,6 +794,7 @@ plot_response_kinetics <- function(response_data = NULL){
       plot.title = ggplot2::element_text(size=20, face="bold"),
       axis.title = ggplot2::element_text(size=18),
       axis.text = ggplot2::element_text(size=18),
+      plot.margin = ggplot2::margin(1, 1, 2, 2, "cm"),
       legend.text = ggplot2::element_text(size=18),
       legend.title = ggplot2::element_blank()
     )
