@@ -6,25 +6,6 @@ source('helpers.R')
 gw_autoph_response_data <- load_kinetic_response_data()
 gw_autoph_competence_data <- load_autophagy_competence_data()
 
-for(elem in c('ds_parms','ds_parms_comb')){
-  if(!is.null(gw_autoph_response_data[[elem]])){
-    gw_autoph_response_data[[elem]]$Parameter <-
-      gsub("A_","Autophagy ",gw_autoph_response_data[[elem]]$Parameter)
-    gw_autoph_response_data[[elem]]$Parameter <-
-      ifelse(!grepl("Param",gw_autoph_response_data[[elem]]$Parameter),
-             gsub("slope","Slope (tangent) ",gw_autoph_response_data[[elem]]$Parameter),
-             gsub("slope","Slope (sigmoid) ",gw_autoph_response_data[[elem]]$Parameter))
-    gw_autoph_response_data[[elem]]$Parameter <- gsub("Param","",gw_autoph_response_data[[elem]]$Parameter)
-    gw_autoph_response_data[[elem]]$Parameter <- gsub("1","-N",gw_autoph_response_data[[elem]]$Parameter)
-    gw_autoph_response_data[[elem]]$Parameter <- gsub("2","+N ",gw_autoph_response_data[[elem]]$Parameter)
-    gw_autoph_response_data[[elem]]$Parameter <- gsub("_"," ",gw_autoph_response_data[[elem]]$Parameter)
-    gw_autoph_response_data[[elem]]$Parameter <- gsub("starvation","-N",gw_autoph_response_data[[elem]]$Parameter)
-    gw_autoph_response_data[[elem]]$Parameter <- gsub("replenishment","+N",gw_autoph_response_data[[elem]]$Parameter)
-    gw_autoph_response_data[[elem]]$Parameter <- stringr::str_trim(gw_autoph_response_data[[elem]]$Parameter)
-
-  }
-}
-
 autophagy_competence_view <- list()
 autophagy_competence_view[['single']] <-
   bslib::card(
@@ -80,7 +61,7 @@ kinetics_sidebar_multiple <-
           minItems = 1,
           maxItems = 10),
         #selectize = T,
-        choices = gw_autoph_response_data$gene_info_kinetic$orf_gene_id),
+        choices = gw_autoph_response_data$gene_info_kinetic_multi$orf_gene_id),
         shiny::selectInput(
           "x_var_kin","X-axis variable",
           c("Perturbation -N",
@@ -242,7 +223,6 @@ ui <- bslib::page_navbar(
   #subtitle = "A web portal for exploring autophagy dynamics in yeast",
   bslib::nav_spacer(),
   bslib::nav_panel("Home", about_page),
-  bslib::nav_panel("Downloads", downloads_page),
   bslib::nav_menu(
     "Autophagy response kinetics",
     bslib::nav_panel("Single gene perspective", kinetics_sidebar),
@@ -252,7 +232,8 @@ ui <- bslib::page_navbar(
     "Autophagy competence",
     bslib::nav_panel("Single gene perspective", bfactor_sidebar),
     bslib::nav_panel("Multiple gene perspective", bfactor_sidebar_multiple)
-  )
+  ),
+  bslib::nav_panel("Data downloads", downloads_page),
 
   #bslib::nav_item(tags$a("About", href = "https://posit.co")),
 

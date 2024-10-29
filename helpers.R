@@ -37,76 +37,9 @@ show_gene_info <- function(primary_id = NULL,
   return(res)
 
 }
-# load_all_bf_data <- function(){
-#
-#   df_BF_overall <- fst::read_fst(
-#     file.path(here::here(), "data","processed","df_BF_overall.fst"))
-#   df_BF_starv <- fst::read_fst(
-#     file.path(here::here(), "data","processed","df_BF_starv.fst"))
-#   df_BF_repl <- fst::read_fst(
-#     file.path(here::here(), "data","processed","df_BF_repl.fst"))
-#   df_BF_temporal <- fst::read_fst(
-#     file.path(here::here(), "data","processed","df_BF_temporal.fst"))
-#   gene_ids_bf <- fst::read_fst(
-#     file.path(here::here(), "data","processed","gene_ids_bf.fst"))
-#
-#   return(list(
-#     df_BF_overall = df_BF_overall,
-#     df_BF_starv = df_BF_starv,
-#     df_BF_repl = df_BF_repl,
-#     df_BF_temporal = df_BF_temporal,
-#     gene_ids_bf = gene_ids_bf
-#   ))
-#
-# }
-# load_all_response_data <- function(){
-#
-#   df_DNN_preds <- fst::read_fst(
-#     file.path(here::here(), "data","processed","df_DNN_preds.fst"))
-#   df_DS_curvefits <- fst::read_fst(
-#     file.path(here::here(), "data","processed","df_DS_curvefits.fst"))
-#   df_DS_parms <- fst::read_fst(
-#     file.path(here::here(), "data","processed","df_DS_parms.fst"))
-#   df_DS_parms_ctrs <- fst::read_fst(
-#     file.path(here::here(), "data","processed","df_DS_parms_ctrs.fst"))
-#   regr_df_all <- fst::read_fst(
-#     file.path(here::here(), "data","processed","regr_df_all.fst"))
-#   gene_ids_kinetic <- fst::read_fst(
-#     file.path(here::here(), "data","processed","gene_ids_kinetic.fst"))
-#
-#
-#
-#   df_DS_parms_comb <- dplyr::bind_rows(
-#     df_DS_parms,df_DS_parms_ctrs)
-#
-#   return(list(
-#     df_DS_parms_comb = df_DS_parms_comb,
-#     df_DNN_preds = df_DNN_preds,
-#     df_DS_curvefits = df_DS_curvefits,
-#     df_DS_parms = df_DS_parms,
-#     df_DS_parms_ctrs = df_DS_parms_ctrs,
-#     regr_df_all = regr_df_all,
-#     gene_ids_kinetic = gene_ids_kinetic
-#   ))
-# }
 
 
 load_kinetic_response_data <- function(){
-
-  # df_DS_curvefits <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","df_DS_curvefits.fst"))
-  # df_DS_parms <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","df_DS_parms.fst"))
-  # df_DS_parms_ctrs <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","df_DS_parms_ctrs.fst"))
-  # kinetic_response_plot_input <- readRDS(
-  #   file.path(here::here(), "data","processed","gw_autoph_kinetic_plot_input.rds"))
-  # gene_ids_kinetic <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","gene_ids_kinetic.fst"))
-  # df_DNN_preds <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","df_DNN_preds.fst"))
-  # df_DS_parms_comb <- dplyr::bind_rows(
-  #   df_DS_parms,df_DS_parms_ctrs)
 
   df_DS_curvefits <- fst::read_fst(
     file.path(here::here(), "data","processed","ds_curvefits.fst"))
@@ -118,6 +51,8 @@ load_kinetic_response_data <- function(){
     file.path(here::here(), "data","processed","gw_autoph_kinetic_plot_input.rds"))
   gene_info_kinetic <- fst::read_fst(
     file.path(here::here(), "data","processed","gene_info_kinetic.fst"))
+  gene_info_kinetic_multi <- fst::read_fst(
+    file.path(here::here(), "data","processed","gene_info_kinetic_multi.fst"))
   df_DNN_preds <- fst::read_fst(
     file.path(here::here(), "data","processed","dnn_preds.fst"))
   df_DS_parms_comb <- dplyr::bind_rows(
@@ -131,23 +66,13 @@ load_kinetic_response_data <- function(){
     ds_parms_comb = df_DS_parms_comb,
     dnn_preds = df_DNN_preds,
     per_ko = kinetic_response_plot_input,
-    gene_info_kinetic = gene_info_kinetic
+    gene_info_kinetic = gene_info_kinetic,
+    gene_info_kinetic_multi = gene_info_kinetic_multi
   ))
 
 }
 
 load_autophagy_competence_data <- function(){
-
-  # autophagy_competence_plot_input <- readRDS(
-  #   file.path(here::here(), "data","processed","gw_autoph_competence_plot_input.rds"))
-  # gene_ids_bf <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","gene_ids_bf.fst"))
-  # df_DNN_preds <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","df_DNN_preds.fst"))
-  # df_BF_overall <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","df_BF_overall.fst"))
-  # df_BF_temporal <- fst::read_fst(
-  #   file.path(here::here(), "data","processed","df_BF_temporal.fst"))
 
   autophagy_competence_plot_input <- readRDS(
     file.path(here::here(), "data","processed","gw_autoph_competence_plot_input.rds"))
@@ -179,8 +104,8 @@ plot_autophagy_competence_multi <- function(
     user_y = "Autophagosome clearance"){
 
   #Select x and y
-  variables <- colnames(competence_data[['bf_overall']])[5:16]
-
+  variables <- colnames(
+    competence_data[['bf_overall']])[5:16]
 
   X <- variables[1]
   Y <- variables[1]
@@ -226,17 +151,14 @@ plot_autophagy_competence_multi <- function(
     lab_x <- paste0("<br><b>Autophagosome formation</b><br><br>",
                     "<i>log BF (VAM6:ATG1) - DNN model '",
                     dnn_model,"'</i>")
-    #lab_x <- paste0("<b>Autophagosome formation<b><br><br>"
   }else if(grepl("WT.ATG1", X, fixed = T)){
     lab_x <- paste0("<br><b>Overall autophagy</b><br><br>",
                     "<i>log BF (WT:ATG1) - DNN model '",
                     dnn_model,"'</i>")
-    #lab_x <- "Overall autophagy"
   }else{
     lab_x <- paste0("<br><b>Autophagosome clearance</b><br><br>",
                     "<i>log BF (WT:VAM6) - DNN model '",
                     dnn_model,"'</i>")
-    #lab_x <- "Autophagosome clearance"
   }
   if(grepl("VAM6.ATG1", Y, fixed = T)){
     lab_y <- paste0("<b>Autophagosome formation</b><br><br>",
@@ -247,12 +169,10 @@ plot_autophagy_competence_multi <- function(
     lab_y <- paste0("<b>Overall autophagy</b><br><br>",
                     "<i>log BF (WT:ATG1) - DNN model '",
                     dnn_model,"'</i><br>")
-    #lab_y <- "Overall autophagy"
   }else{
     lab_y <- paste0("<b>Autophagosome clearance</b><br><br>",
                     "<i>log BF (WT:VAM6) - DNN model '",
                     dnn_model,"'</i><br>")
-    #lab_y <- "Autophagosome clearance"
   }
 
   Positions <- c()
@@ -316,14 +236,7 @@ plot_autophagy_competence_multi <- function(
     ggplot2::labs(
       x = lab_x,
       y = lab_y,
-      #x=paste0(
-      #gsub("\\.",":",gsub("_"," ",X)),"\n",lab_x),
-      #y=paste0(lab_y,"\n",gsub("\\.",":",gsub("_"," ",Y))),
       color="Reference sets", linetype="Library")+
-    # ggplot2::labs(
-    #   x=gsub("\\.",":",gsub("_"," ",X)),
-    #   y=gsub("\\.",":",gsub("_"," ",Y)),
-    #   color="Reference sets", linetype="Library") +
     ggsci::scale_fill_jama() +
     ggsci::scale_color_d3() +
     ggplot2::scale_linetype_manual(values=c(2,1)) +
@@ -484,8 +397,6 @@ plot_autophagy_competence <- function(competence_data = NULL,
       ggplot2::labs(
         x = x_lab,
         y = y_lab,
-        #x="log BF (VAM6:ATG1), DNN-model '30'",
-        #y="log BF (WT:VAM6), DNN-model '30'",
         col="Time", size="BF (WT:ATG1)",
         title=paste(competence_data$id, competence_data$Library), shape="") +
       ggplot2::theme_bw(base_size = 20, base_family = "Helvetica") +
@@ -493,7 +404,6 @@ plot_autophagy_competence <- function(competence_data = NULL,
         panel.grid.major = ggplot2::element_blank(),
         panel.grid.minor = ggplot2::element_blank(),
         plot.title = ggplot2::element_text(size=20, face="bold"),
-        #axis.title = ggplot2::element_text(size=18),
         axis.text = ggplot2::element_text(size=18),
         plot.margin = ggplot2::margin(2, 1, 2, 1, "cm"),
         axis.title.y = ggtext::element_markdown(size = 18),
@@ -513,7 +423,6 @@ plot_autophagy_competence <- function(competence_data = NULL,
         yintercept = 0, lty=1, col="black", size=0.1) +
       scico::scale_color_scico(palette = 'lisbon') +
       ggplot2::scale_size(range = c(0, 1.5)) +
-      #geom_path(data=BF_response_ctr,aes(),col="gray",lty=2, alpha = 1) +
       ggplot2::geom_point(
         data=competence_data$BF_response_ctr,
         ggplot2::aes(size=log_BFt_WT.ATG1_22, pch="Control"),size=1.8, alpha = 1) +
@@ -530,8 +439,6 @@ plot_autophagy_competence <- function(competence_data = NULL,
       ggplot2::labs(
         x = x_lab,
         y = y_lab,
-        #x="log BF (VAM6:ATG1), DNN-model '22'",
-        #y="log BF (WT:VAM6), DNN-model '22'",
         col="Time",
         size="BF (WT:ATG1)",
         title=paste(competence_data$id, competence_data$Library), shape="") +
@@ -540,7 +447,6 @@ plot_autophagy_competence <- function(competence_data = NULL,
         panel.grid.major = ggplot2::element_blank(),
         panel.grid.minor = ggplot2::element_blank(),
         plot.title = ggplot2::element_text(size=20, face="bold"),
-        #axis.title = ggplot2::element_text(size=18),
         axis.text = ggplot2::element_text(size=18),
         plot.margin = ggplot2::margin(2, 1, 2, 1, "cm"),
         axis.title.y = ggtext::element_markdown(size = 18),
@@ -596,11 +502,13 @@ plot_response_kinetics_multi <- function(
     response_data[['ds_parms']]$Parameter %in% c(X,Y)),],
                Plate+Position+ORF+Gene+ Reference_sets~Parameter,
                value.var = Value)
+
   mat_select <- dcast(response_data[['ds_parms_comb']][which(
     response_data[['ds_parms_comb']]$Parameter %in% c(X,Y)),] |>
       subset(paste(Plate, Position) %in% Positions),
     Plate+Position+ORF+Gene + Reference_sets+Plate_controls~Parameter,
     value.var = Value)
+
   mat$X <- mat[,X]
   mat$Y <- mat[,Y]
   mat_select$X <- mat_select[,X]
@@ -608,15 +516,19 @@ plot_response_kinetics_multi <- function(
 
   #Filter, replace manual control of scale?
   if(Filter){
-    x_lower_bound <- quantile(mat$X, 1-0.99, na.rm = T) - 5*IQR(mat$X, na.rm = T)
-    x_upper_bound <- quantile(mat$X, 0.99, na.rm = T) + 5*IQR(mat$X, na.rm = T)
-    y_lower_bound <- quantile(mat$Y, 1-0.99, na.rm = T) - 5*IQR(mat$Y, na.rm = T)
-    y_upper_bound <- quantile(mat$Y, 0.99, na.rm = T) + 5*IQR(mat$Y, na.rm = T)
+    x_lower_bound <- as.numeric(quantile(mat$X, 1-0.99, na.rm = T)) -
+      5 * IQR(mat$X, na.rm = T)
+    x_upper_bound <- as.numeric(quantile(mat$X, 0.99, na.rm = T)) +
+      5 * IQR(mat$X, na.rm = T)
+    y_lower_bound <- as.numeric(quantile(mat$Y, 1-0.99, na.rm = T)) -
+      5 * IQR(mat$Y, na.rm = T)
+    y_upper_bound <- as.numeric(quantile(mat$Y, 0.99, na.rm = T)) +
+      5 * IQR(mat$Y, na.rm = T)
   }else{
-    x_lower_bound <- min(mat$X)
-    x_upper_bound <- max(mat$X)
-    y_lower_bound <- min(mat$Y)
-    y_upper_bound <- max(mat$Y)
+    x_lower_bound <- min(mat$X, na.rm = T)
+    x_upper_bound <- max(mat$X, na.rm = T)
+    y_lower_bound <- min(mat$Y, na.rm = T)
+    y_upper_bound <- max(mat$Y, na.rm = T)
   }
 
   mat$Type <- response_data[['dnn_preds']]$Type[match(paste(
