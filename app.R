@@ -6,6 +6,25 @@ source('helpers.R')
 gw_autoph_response_data <- load_kinetic_response_data()
 gw_autoph_competence_data <- load_autophagy_competence_data()
 
+for(elem in c('ds_parms','ds_parms_comb')){
+  if(!is.null(gw_autoph_response_data[[elem]])){
+    gw_autoph_response_data[[elem]]$Parameter <-
+      gsub("A_","Autophagy ",gw_autoph_response_data[[elem]]$Parameter)
+    gw_autoph_response_data[[elem]]$Parameter <-
+      ifelse(!grepl("Param",gw_autoph_response_data[[elem]]$Parameter),
+             gsub("slope","Slope (tangent) ",gw_autoph_response_data[[elem]]$Parameter),
+             gsub("slope","Slope (sigmoid) ",gw_autoph_response_data[[elem]]$Parameter))
+    gw_autoph_response_data[[elem]]$Parameter <- gsub("Param","",gw_autoph_response_data[[elem]]$Parameter)
+    gw_autoph_response_data[[elem]]$Parameter <- gsub("1","-N",gw_autoph_response_data[[elem]]$Parameter)
+    gw_autoph_response_data[[elem]]$Parameter <- gsub("2","+N ",gw_autoph_response_data[[elem]]$Parameter)
+    gw_autoph_response_data[[elem]]$Parameter <- gsub("_"," ",gw_autoph_response_data[[elem]]$Parameter)
+    gw_autoph_response_data[[elem]]$Parameter <- gsub("starvation","-N",gw_autoph_response_data[[elem]]$Parameter)
+    gw_autoph_response_data[[elem]]$Parameter <- gsub("replenishment","+N",gw_autoph_response_data[[elem]]$Parameter)
+    gw_autoph_response_data[[elem]]$Parameter <- stringr::str_trim(gw_autoph_response_data[[elem]]$Parameter)
+
+  }
+}
+
 autophagy_competence_view <- list()
 autophagy_competence_view[['single']] <-
   bslib::card(
@@ -52,38 +71,65 @@ kinetics_sidebar <-
 kinetics_sidebar_multiple <-
   bslib::page_fillable(
     bslib::layout_sidebar(
-      sidebar = shiny::selectizeInput(
+      sidebar = list(
+        shiny::selectizeInput(
         inputId = "gene_id_kinetic_multiple",
         label = "Select ORF/Gene mutants (max 10)",
-        selected = NULL,
+        selected = "RTG2 / YGL252C",
         options = list(
           minItems = 1,
           maxItems = 10),
         #selectize = T,
         choices = gw_autoph_response_data$gene_info_kinetic$orf_gene_id),
+        shiny::selectInput(
+          "x_var_kin","X-axis variable",
+          c("Perturbation -N",
+            "Perturbation +N",
+            "Perturbation overall",
+            "Slope (sigmoid) -N",
+            "Slope (sigmoid) +N",
+            "Slope (tangent) -N",
+            "Slope (tangent) +N",
+            "Autophagy start",
+            "Autophagy max",
+            "Autophagy final",
+            "T50 -N",
+            "T50 +N",
+            "T lag -N",
+            "T lag +N",
+            "T final -N",
+            "T final +N",
+            "Dynamic range -N",
+            "Dynamic range +N"),
+          selected = "T50 +N"
+        ),
+        shiny::selectInput(
+          "y_var_kin","Y-axis variable",
+          c("Perturbation -N",
+            "Perturbation +N",
+            "Perturbation overall",
+            "Slope (sigmoid) -N",
+            "Slope (sigmoid) +N",
+            "Slope (tangent) -N",
+            "Slope (tangent) +N",
+            "Autophagy start",
+            "Autophagy max",
+            "Autophagy final",
+            "T50 -N",
+            "T50 +N",
+            "T lag -N",
+            "T lag +N",
+            "T final -N",
+            "T final +N",
+            "Dynamic range -N",
+            "Dynamic range +N"),
+          selected = "T50 -N"
+        ),
+        shiny::checkboxInput(
+          "contour", "Add contour plot", value = F)),
       response_kinetics_view[['multiple']]
     )
   )
-
-# home_ui <- bslib::navset_card_pill(
-#   #height = 450,
-#   full_screen = TRUE,
-#   title = "",
-#   bslib::nav_panel(
-#     "About",
-#     bslib::card_title("About"),
-#     #plotly_widget
-#   ),
-#   bslib::nav_panel(
-#     "Downloads",
-#     bslib::card_title("Downloads"),
-#     #leaflet_widget
-#   ),
-#   # bslib::nav_panel(
-#   #   shiny::icon("circle-info"),
-#   #   shiny::markdown("Learn more about [htmlwidgets](http://www.htmlwidgets.org/)")
-#   # )
-# )
 
 about_page <-
   bslib::page_fillable(
@@ -133,7 +179,7 @@ bfactor_sidebar_multiple <-
         shiny::selectizeInput(
           inputId = "gene_id_bf_multiple",
           label = "Select ORF/Gene mutants (max 10)",
-          selected = NULL,
+          selected = "RTG2 / YGL252C",
           choices =
             gw_autoph_competence_data$gene_info_bf$orf_gene_id,
           options = list(
@@ -204,8 +250,8 @@ ui <- bslib::page_navbar(
   ),
   bslib::nav_menu(
     "Autophagy competence",
-    bslib::nav_panel("Single gene analysis", bfactor_sidebar),
-    bslib::nav_panel("Multiple gene analysis", bfactor_sidebar_multiple)
+    bslib::nav_panel("Single gene perspective", bfactor_sidebar),
+    bslib::nav_panel("Multiple gene perspective", bfactor_sidebar_multiple)
   )
 
   #bslib::nav_item(tags$a("About", href = "https://posit.co")),
@@ -229,6 +275,9 @@ server <- function(input, output, session) {
   output$autoph_response_kinetics_multiple <- shiny::renderPlot({
     plot_response_kinetics_multi(
       response_data = gw_autoph_response_data,
+      user_x = input$x_var_kin,
+      user_y = input$y_var_kin,
+      show_library_type_contour = input$contour,
       primary_identifiers = input$gene_id_kinetic_multiple)
   })
 

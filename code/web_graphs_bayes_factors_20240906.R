@@ -120,7 +120,7 @@ if(Model == "30"){
 
 # BF overall plots----
 #Select one or several IDs for text repel
-id=IDs_unique[grep("RTG|GCR",IDs_unique)]
+id=IDs_unique[grep("RTG",IDs_unique)]
 
 #Select x and y
 variables <- colnames(df_BF_overall)[5:16]
