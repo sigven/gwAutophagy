@@ -186,16 +186,30 @@ plot_autophagy_competence_multi <- function(
     }
     #Find representative response
     BF_response <- BF_response |>
-      dplyr::group_by(TimeR) |>
-      dplyr::mutate(d=abs(log_BFt_WT.ATG1_30-median(log_BFt_WT.ATG1_30)) +
-               abs(log_BFt_WT.VAM6_30-median(log_BFt_WT.VAM6_30)) +
-               abs(log_BFt_VAM6.ATG1_30-median(log_BFt_VAM6.ATG1_30)) +
-               abs(log_BFt_WT.ATG1_22-median(log_BFt_WT.ATG1_22)) +
-               abs(log_BFt_WT.VAM6_22-median(log_BFt_WT.VAM6_22)) +
+      group_by(TimeR) |>
+      mutate(d=abs(log_BFt_WT.ATG1_30-median(log_BFt_WT.ATG1_30))+
+               abs(log_BFt_WT.VAM6_30-median(log_BFt_WT.VAM6_30))+
+               abs(log_BFt_VAM6.ATG1_30-median(log_BFt_VAM6.ATG1_30))+
+               abs(log_BFt_WT.ATG1_22-median(log_BFt_WT.ATG1_22))+
+               abs(log_BFt_WT.VAM6_22-median(log_BFt_WT.VAM6_22))+
                abs(log_BFt_VAM6.ATG1_22-median(log_BFt_VAM6.ATG1_22))) |>
-      dplyr::group_by(Plate, Position) |>
-      dplyr::mutate(d=mean(d))
+      group_by(Plate, Position) |>
+      mutate(d=mean(d),
+             NCells = mean(NCells))
     BF_response <- BF_response[which(BF_response$d==min(BF_response$d)),]
+    BF_response <- BF_response[which(BF_response$NCells==max(BF_response$NCells)),]
+
+    # BF_response <- BF_response |>
+    #   dplyr::group_by(TimeR) |>
+    #   dplyr::mutate(d=abs(log_BFt_WT.ATG1_30-median(log_BFt_WT.ATG1_30)) +
+    #            abs(log_BFt_WT.VAM6_30-median(log_BFt_WT.VAM6_30)) +
+    #            abs(log_BFt_VAM6.ATG1_30-median(log_BFt_VAM6.ATG1_30)) +
+    #            abs(log_BFt_WT.ATG1_22-median(log_BFt_WT.ATG1_22)) +
+    #            abs(log_BFt_WT.VAM6_22-median(log_BFt_WT.VAM6_22)) +
+    #            abs(log_BFt_VAM6.ATG1_22-median(log_BFt_VAM6.ATG1_22))) |>
+    #   dplyr::group_by(Plate, Position) |>
+    #   dplyr::mutate(d=mean(d))
+    # BF_response <- BF_response[which(BF_response$d==min(BF_response$d)),]
     Positions <- c(Positions,paste(BF_response$Plate, BF_response$Position)[1])
   }
 
@@ -462,11 +476,18 @@ plot_autophagy_competence <- function(competence_data = NULL,
 plot_response_kinetics_multi <- function(
     response_data = NULL,
     primary_identifiers = "RTG1 / YOL067C",
-    Filter = TRUE,
+    custom_scale_limits = TRUE,
     user_x = "T50 +N",
     user_y = "T50 -N",
+    use_perturbation_data = FALSE,
     show_library_type_contour = FALSE,
     Value = "Perturbation"){
+
+
+  Value = "Value"
+  if(use_perturbation_data == TRUE){
+    Value = "Perturbation"
+  }
 
   # Kinetic parameters
   #Select one or several IDs for text repel
@@ -488,10 +509,23 @@ plot_response_kinetics_multi <- function(
       y_pred <- y_pred[which(grepl("Rec",y_pred$Plate)),]
     }
     #Find representative response
-    y_pred <- y_pred %>%
-      dplyr::group_by(Time) %>%
-      dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) %>%
-      dplyr::group_by(Plate, Position) %>%
+    y_pred <- y_pred |>
+      dplyr::group_by(Time) |>
+      dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) |>
+      dplyr::group_by(Plate, Position) |>
+      dplyr::mutate(d=mean(d))
+    y_pred <- y_pred[which(y_pred$d==min(y_pred$d)),]
+    # y_raw <- df_DNN_preds |>
+    #   subset(paste(Plate, Position) %in% paste(y_pred$Plate, y_pred$Position)) |>
+    #   dplyr::group_by(Plate, Position) |>
+    #   dplyr::mutate(NCells = mean(NCells ))
+    # y_raw <- y_raw[which(y_raw$NCells==max(y_raw$NCells)),]
+    # y_pred <- y_pred |> subset(paste(Plate, Position) %in% paste(y_raw$Plate, y_raw$Position))
+
+    y_pred <- y_pred |>
+      dplyr::group_by(Time) |>
+      dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) |>
+      dplyr::group_by(Plate, Position) |>
       dplyr::mutate(d=mean(d))
     y_pred <- y_pred[which(y_pred$d==min(y_pred$d)),]
     Positions <- c(
@@ -515,7 +549,7 @@ plot_response_kinetics_multi <- function(
   mat_select$Y <- mat_select[,Y]
 
   #Filter, replace manual control of scale?
-  if(Filter){
+  if(custom_scale_limits == TRUE){
     x_lower_bound <- as.numeric(quantile(mat$X, 1-0.99, na.rm = T)) -
       5 * IQR(mat$X, na.rm = T)
     x_upper_bound <- as.numeric(quantile(mat$X, 0.99, na.rm = T)) +
@@ -560,12 +594,12 @@ plot_response_kinetics_multi <- function(
     ggplot2::theme(
       axis.title = ggplot2::element_text(size=18),
       axis.text = ggplot2::element_text(size=18),
-      #plot.margin = ggplot2::margin(1, 1, 2, 2, "cm"),
       legend.text = ggplot2::element_text(size=18),
       plot.margin = ggplot2::margin(1, 1, 1, 1, "cm"),
       legend.position = "top",
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank())
+      legend.title = ggplot2::element_blank(),
+      panel.grid.major = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank())
 
   if(show_library_type_contour == T){
     p <- p + ggplot2::stat_density_2d(
@@ -717,5 +751,30 @@ plot_response_kinetics <- function(response_data = NULL){
     )
 
   return(p)
+}
+
+get_kinetic_response_params <- function(){
+
+  params <-
+    c("Perturbation -N",
+      "Perturbation +N",
+      "Perturbation overall",
+      "Slope (sigmoid) -N",
+      "Slope (sigmoid) +N",
+      "Slope (tangent) -N",
+      "Slope (tangent) +N",
+      "Autophagy start",
+      "Autophagy max",
+      "Autophagy final",
+      "T50 -N",
+      "T50 +N",
+      "T lag -N",
+      "T lag +N",
+      "T final -N",
+      "T final +N",
+      "Dynamic range -N",
+      "Dynamic range +N")
+  return(params)
+
 }
 

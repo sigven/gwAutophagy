@@ -42,6 +42,8 @@ y_pred <- y_pred %>%
 y_pred <- y_pred[which(y_pred$d==min(y_pred$d)),]
 y_raw <- df_DNN_preds %>% subset(paste(Plate, Position) == paste(y_pred$Plate, y_pred$Position)[1])
 
+
+
 Library <- ifelse(y_raw$Type== "KO" | !(is.na(y_raw$Plate_controls)),"KO","DAmP")[1]
 Plate_id <- unique(y_raw$Plate)
 y_pred.ctr <- df_DS_curvefits[which(is.na(df_DS_curvefits$Plate_controls)),] %>%

@@ -18,12 +18,17 @@ clean_internal_gene_orfs <- function(dataset = NULL){
   dataset <- dataset |>
     dplyr::mutate(record_idx = dplyr::row_number())
 
+  ## Both Gene and ORF are present
   tmp1 <- dataset |>
     dplyr::filter(!is.na(ORF) & !is.na(Gene)) |>
     dplyr::mutate(Gene2 = Gene, ORF2 = ORF)
+
+  ## Only ORF is present (Gene is missing) - skip if ORF is part of tmp1 dataset
   tmp2 <- dataset |>
     dplyr::filter(!is.na(ORF) & is.na(Gene)) |>
     dplyr::anti_join(tmp1, by = "ORF")
+
+  ## Only Gene is present (ORF is missing) - WT
   tmp0 <- dataset |>
     dplyr::filter(is.na(ORF) & !is.na(Gene))
 
@@ -56,8 +61,10 @@ clean_internal_gene_orfs <- function(dataset = NULL){
     dplyr::select(-c("record_idx")) |>
     dplyr::mutate(
       screen_id = gsub(
-        "NA / ", "", paste(Gene2, ORF2, sep = " / ")))
+        "NA / ", "",
+        paste(Gene2, ORF2, sep = " / ")))
 
+  ## skip duplicated/merged mutants
   merged_duplicate_mutants <-
     readr::read_tsv("data-raw/duplicated_merged_mutants.txt",
                     show_col_types = F, col_names = F)
@@ -91,8 +98,10 @@ autophagy_competence_per_ko <- function(id, gw_autoph_data = NULL){
              abs(log_BFt_WT.VAM6_22-median(log_BFt_WT.VAM6_22))+
              abs(log_BFt_VAM6.ATG1_22-median(log_BFt_VAM6.ATG1_22))) |>
     dplyr::group_by(Plate, Position) |>
-    dplyr::mutate(d = mean(d))
+    dplyr::mutate(d = mean(d), NCells = mean(NCells))
   BF_response <- BF_response[which(BF_response$d == min(BF_response$d)),]
+  BF_response <- BF_response[which(BF_response$NCells == max(BF_response$NCells)),]
+
   BF_response_ctr <- gw_autoph_data$BF_temporal[
     gw_autoph_data$BF_temporal$Plate == BF_response$Plate[1],] |>
     dplyr::group_by(TimeR) |>
@@ -161,6 +170,7 @@ kinetic_response_per_ko <- function(
   #else what?
 
   #Find representative response
+
   y_pred <- y_pred |>
     dplyr::group_by(Time) |>
     dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) |>
@@ -168,8 +178,25 @@ kinetic_response_per_ko <- function(
     dplyr::mutate(d=mean(d))
   y_pred <- y_pred[which(y_pred$d==min(y_pred$d)),]
   y_raw <- gw_autoph_data$dnn_preds |>
-    dplyr::filter(
-      paste(Plate, Position) == paste(y_pred$Plate, y_pred$Position)[1])
+    #dplyr::filter(
+      #paste(Plate, Position) == paste(y_pred$Plate, y_pred$Position)[1])
+    subset(paste(Plate, Position) %in% paste(y_pred$Plate, y_pred$Position)) |>
+    dplyr::group_by(Plate, Position) |>
+    dplyr::mutate(NCells = mean(NCells ))
+  y_raw <- y_raw[which(y_raw$NCells==max(y_raw$NCells)),]
+  y_pred <- y_pred |>
+    subset(paste(Plate, Position) %in% paste(y_raw$Plate, y_raw$Position))
+
+
+  # y_pred <- y_pred |>
+  #   dplyr::group_by(Time) |>
+  #   dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) |>
+  #   dplyr::group_by(Plate, Position) |>
+  #   dplyr::mutate(d=mean(d))
+  # y_pred <- y_pred[which(y_pred$d==min(y_pred$d)),]
+  # y_raw <- gw_autoph_data$dnn_preds |>
+  #   dplyr::filter(
+  #     paste(Plate, Position) == paste(y_pred$Plate, y_pred$Position)[1])
 
   slibrary <- ifelse(y_raw$Type== "KO" | !(is.na(y_raw$Plate_controls)),"KO","DAmP")[1]
   plate_id <- unique(y_raw$Plate)
@@ -680,46 +707,46 @@ autophagy_preds[['ds_curvefits']] <-
 
 
 saveRDS(gw_autoph_competence_plot_input, file.path(
-  here::here(), "data","processed","gw_autoph_competence_plot_input.rds"))
+  here::here(), "data","processed2","gw_autoph_competence_plot_input.rds"))
 saveRDS(gw_autoph_kinetic_plot_input, file.path(
-  here::here(), "data","processed","gw_autoph_kinetic_plot_input.rds"))
+  here::here(), "data","processed2","gw_autoph_kinetic_plot_input.rds"))
 fst::write_fst(
   autophagy_preds$dnn, file.path(
-    here::here(), "data","processed","dnn_preds.fst"))
+    here::here(), "data","processed2","dnn_preds.fst"))
 fst::write_fst(
   autophagy_preds$ds_curvefits, file.path(
-    here::here(), "data","processed","ds_curvefits.fst"))
+    here::here(), "data","processed2","ds_curvefits.fst"))
 fst::write_fst(
   autophagy_preds$ds_parms, file.path(
-    here::here(), "data","processed","ds_parms.fst"))
+    here::here(), "data","processed2","ds_parms.fst"))
 fst::write_fst(
   autophagy_preds$ds_parms_ctrs, file.path(
-    here::here(), "data","processed","ds_parms_ctrs.fst"))
+    here::here(), "data","processed2","ds_parms_ctrs.fst"))
 fst::write_fst(
   gw_autoph_data$regr_df_all, file.path(
-    here::here(), "data","processed","regr_df_all.fst"))
+    here::here(), "data","processed2","regr_df_all.fst"))
 fst::write_fst(
   gene_info_kinetic, file.path(
-    here::here(), "data","processed","gene_info_kinetic.fst"))
+    here::here(), "data","processed2","gene_info_kinetic.fst"))
 fst::write_fst(
   gene_info_kinetic_multi, file.path(
-    here::here(), "data","processed","gene_info_kinetic_multi.fst"))
+    here::here(), "data","processed2","gene_info_kinetic_multi.fst"))
 
 
 fst::write_fst(
   gene_info_bf, file.path(
-    here::here(), "data","processed","gene_info_bf.fst"))
+    here::here(), "data","processed2","gene_info_bf.fst"))
 fst::write_fst(
   gw_autoph_data$BF_overall, file.path(
-    here::here(), "data","processed","BF_overall.fst"))
+    here::here(), "data","processed2","BF_overall.fst"))
 fst::write_fst(
   gw_autoph_data$BF_starv, file.path(
-    here::here(), "data","processed","BF_starv.fst"))
+    here::here(), "data","processed2","BF_starv.fst"))
 fst::write_fst(
   gw_autoph_data$BF_starv, file.path(
-    here::here(), "data","processed","BF_repl.fst"))
+    here::here(), "data","processed2","BF_repl.fst"))
 fst::write_fst(
   gw_autoph_data$BF_temporal, file.path(
-    here::here(), "data","processed","BF_temporal.fst"))
+    here::here(), "data","processed2","BF_temporal.fst"))
 
 
