@@ -4,6 +4,8 @@ library(ggsci)
 library(matrixStats)
 library(reshape2)
 library(ggrepel)
+library(scico)
+library(fst)
 
 
 show_gene_info <- function(primary_id = NULL,
@@ -19,7 +21,8 @@ show_gene_info <- function(primary_id = NULL,
     gene_info_id <- gene_info |>
       dplyr::filter(primary_identifier == primary_id)
     if(NROW(gene_info_id) > 0){
-      res[['response_profile']] <- gene_info_id$response_profile
+      res[['response_profile']] <-
+        paste0("<b>",gene_info_id$response_profile,"</b>")
       res[['name']] <- gene_info_id$genename
       res[['description']] <- gene_info_id$sgd_description
       res[['human_orthologs']] <-
@@ -188,16 +191,17 @@ plot_autophagy_competence_multi <- function(
     }
     #Find representative response
     BF_response <- BF_response |>
-      group_by(TimeR) |>
-      mutate(d=abs(log_BFt_WT.ATG1_30-median(log_BFt_WT.ATG1_30))+
+      dplyr::group_by(TimeR) |>
+      dplyr::mutate(d=abs(log_BFt_WT.ATG1_30-median(log_BFt_WT.ATG1_30))+
                abs(log_BFt_WT.VAM6_30-median(log_BFt_WT.VAM6_30))+
                abs(log_BFt_VAM6.ATG1_30-median(log_BFt_VAM6.ATG1_30))+
                abs(log_BFt_WT.ATG1_22-median(log_BFt_WT.ATG1_22))+
                abs(log_BFt_WT.VAM6_22-median(log_BFt_WT.VAM6_22))+
                abs(log_BFt_VAM6.ATG1_22-median(log_BFt_VAM6.ATG1_22))) |>
-      group_by(Plate, Position) |>
-      mutate(d=mean(d),
-             NCells = mean(NCells))
+      dplyr::group_by(Plate, Position) |>
+      dplyr::mutate(
+        d = mean(d),
+        NCells = mean(NCells))
     BF_response <- BF_response[which(BF_response$d==min(BF_response$d)),]
     BF_response <- BF_response[which(BF_response$NCells==max(BF_response$NCells)),]
 
@@ -239,17 +243,17 @@ plot_autophagy_competence_multi <- function(
     ggplot2::stat_density_2d(data=mat[which(mat$Plate_controls=="+"),] |>
                                dplyr::mutate(Gene = ifelse(
                                  is.na(Gene) | Gene == "WT", "WT/Control", Gene)),
-                    ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
-                    geom = "polygon", col=NA) +
+                             ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
+                             geom = "polygon", col=NA) +
     ggplot2::geom_point(
       data=mat[which(!is.na(mat$Reference_sets) & !grepl("ORF",mat$Reference_sets)),],
-               ggplot2::aes(col=Reference_sets), size=1.3) +
+      ggplot2::aes(col=Reference_sets), size=1.3) +
     ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
     ggrepel::geom_text_repel(data=mat_select, ggplot2::aes(label=Gene),
-                    force=2, size=5,
-                    max.overlaps = Inf,
-                    min.segment.length = 0,
-                    segment.size = 0.3) +
+                             force=2, size=5,
+                             max.overlaps = Inf,
+                             min.segment.length = 0,
+                             segment.size = 0.3) +
     ggplot2::labs(
       x = lab_x,
       y = lab_y,
@@ -457,8 +461,8 @@ plot_autophagy_competence <- function(competence_data = NULL,
       ggplot2::labs(
         x = x_lab,
         y = y_lab,
-        col="Time",
-        size="BF (WT:ATG1)",
+        col = "Time",
+        size = "BF (WT:ATG1)",
         title=paste(competence_data$id, competence_data$Library), shape="") +
       ggplot2::theme_bw(base_size = 20, base_family = "Helvetica") +
       ggplot2::theme(
@@ -536,7 +540,7 @@ plot_response_kinetics_multi <- function(
       Positions,paste(y_pred$Plate, y_pred$Position)[1])
   }
 
-  mat <- dcast(response_data[['ds_parms']][which(
+  mat <- reshape2::dcast(response_data[['ds_parms']][which(
     response_data[['ds_parms']]$Parameter %in% c(X,Y)),],
                Plate+Position+ORF+Gene+ Reference_sets~Parameter,
                value.var = Value)
@@ -554,13 +558,13 @@ plot_response_kinetics_multi <- function(
 
   #Filter, replace manual control of scale?
   if(custom_scale_limits == TRUE){
-    x_lower_bound <- as.numeric(quantile(mat$X, 1-0.99, na.rm = T)) -
+    x_lower_bound <- as.numeric(stats::quantile(mat$X, 1-0.99, na.rm = T)) -
       5 * IQR(mat$X, na.rm = T)
-    x_upper_bound <- as.numeric(quantile(mat$X, 0.99, na.rm = T)) +
+    x_upper_bound <- as.numeric(stats::quantile(mat$X, 0.99, na.rm = T)) +
       5 * IQR(mat$X, na.rm = T)
-    y_lower_bound <- as.numeric(quantile(mat$Y, 1-0.99, na.rm = T)) -
+    y_lower_bound <- as.numeric(stats::quantile(mat$Y, 1-0.99, na.rm = T)) -
       5 * IQR(mat$Y, na.rm = T)
-    y_upper_bound <- as.numeric(quantile(mat$Y, 0.99, na.rm = T)) +
+    y_upper_bound <- as.numeric(stats::quantile(mat$Y, 0.99, na.rm = T)) +
       5 * IQR(mat$Y, na.rm = T)
   }else{
     x_lower_bound <- min(mat$X, na.rm = T)
@@ -708,15 +712,15 @@ plot_response_kinetics <- function(response_data = NULL){
                    yend=double_sigmoidal_model[,"endDeclinePoint_y"] ),
       lineend="round",arrow=arrow(length=unit(arrow_length, "inches"), ends = "both"),
       alpha=1, size=size_segment) +
-    geom_line(
+    ggplot2::geom_line(
       ggplot2::aes(x= y_pred.ctr$Time, y=y_pred.ctr$P1_30_fit, col="Control")) +
-    geom_ribbon(
+    ggplot2::geom_ribbon(
       ggplot2::aes(x=y_pred.ctr$Time,
                    y=colMeans(rbind(y_pred.ctr$P1_30_fit,y_pred$P1_30_fit)),
                    ymin=colMins(rbind(y_pred.ctr$P1_30_fit,y_pred$P1_30_fit)),
                    ymax=colMaxs(rbind(y_pred.ctr$P1_30_fit,y_pred$P1_30_fit))),
       fill="yellow", alpha=0.1) +
-    geom_ribbon(
+    ggplot2::geom_ribbon(
       ggplot2::aes(x=c(double_sigmoidal_model[,"startPoint_x"],
                        double_sigmoidal_model[,"reachMaximum_x"]),
                    y=c(0, double_sigmoidal_model[,"reachMaximum_y"]),

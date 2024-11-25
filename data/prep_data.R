@@ -545,8 +545,15 @@ gene_info_kinetic <-
   ) |>
   dplyr::distinct() |>
   dplyr::left_join(
-    dplyr::select(autophagy_preds$profile, primary_identifier, Profile)) |>
+    dplyr::select(autophagy_preds$profile,
+                  primary_identifier, Profile),
+    by = "primary_identifier") |>
   dplyr::rename(response_profile = Profile) |>
+  dplyr::mutate(response_profile = dplyr::if_else(
+    is.na(response_profile),
+    "Not available",
+    stringr::str_replace(response_profile, "[1-6]: ", "")
+  )) |>
   dplyr::distinct()
 
 ## identify gene/ORFs with missing data

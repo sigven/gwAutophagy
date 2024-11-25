@@ -1,0 +1,1 @@
+The autophagy profiles of individual genes or groups of genes can be explored in the context of genome-wide patterns. Both nutrient response kinetics and Bayesian analysis of autophagic stages are available, providing insights into each gene’s activation timing and specific roles in autophagosome formation and clearance.<br><br>

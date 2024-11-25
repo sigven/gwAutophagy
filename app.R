@@ -44,7 +44,7 @@ kinetics_sidebar <-
     bslib::layout_sidebar(
       sidebar = shiny::selectInput(
         "gene_id_kinetic", "Select ORF/Gene mutant",
-        gw_autoph_response_data$gene_info_kinetic$orf_gene_id, selectize = T),
+        gw_autoph_response_data$gene_info_kinetic$orf_gene_id, width = "100%"),
       response_kinetics_view[['single']],
       shiny::uiOutput("selected_gene")
     )
@@ -83,90 +83,98 @@ kinetics_sidebar_multiple <-
 
 
 paper_info <- paste0(
-  "<br><h5><i><a href='https://www.biorxiv.org/content/10.1101/2024.04.06.588104v1' target='_blank'>Genome-wide profiling of the hierarchical control of autophagy dynamics using deep learning</a></i></h5>",
-  "Nathalia Chica, Aram N. Andersen, Sara Orellana-Muñoz, Ignacio Garcia, Aurélie Nguéa P, ",
-  "Pilar Ayuda-Durán, Linda Håkensbakken, Eline Rødningen, Christopher D. Putnam, ",
-  "Manuela Zucknick, Tor Erik Rusten and Jorrit M. Enserink. ",
-  "Correspondence: nathac@uio.no or j.m.enserink@ibv.uio.no")
+  "<h5><b><p style=text-align:justify;'>",
+  "<a href='https://www.biorxiv.org/content/10.1101/2024.04.06.588104v1' ",
+  "target='_blank'>Genome-wide profiling of the hierarchical control of autophagy ",
+  "dynamics using deep learning (bioRxiv, 2024)</a></p></b></h5>",
+  "<h6><p style='text-align:justify;'>",
+  htmltools::includeText("data/section_content/authors.md"),
+  "</p></h6>",
+  "<p style='text-align:justify;'><h6>Correspondence to <i>nathac@uio.no </i>",
+  "or <i>j.m.enserink@ibv.uio.no</i></h6></p>")
 
-sales_pitch <- paste0(
-  "<h5><br><b><p style='color:#593196;'>How is autophagy regulated over time and space, and how can we effectively ",
-  "harness the mechanisms that modulate this essential process? While the ",
-  "autophagy field has provided detailed insights into core molecular ",
-  "regulatory pathways, a lack of systems-level data on autophagy ",
-  "control and dynamics has constrained the development of predictive ",
-  "models and in vivo manipulation strategies. We contend that answering ",
-  "these questions requires a comprehensive understanding of genome-wide ",
-  "influences on autophagy dynamics, beyond basic on-off mechanisms.</p></b><br><br></h5>")
+synopsis <- paste0(
+  "<h5><b><p style='color:#593196;text-align:justify;'>",
+  htmltools::includeText("data/section_content/synopsis_I.md"),
+  "</p></b></h5>",
+  "<h6><p style='text-align:justify;'>",
+  htmltools::includeText("data/section_content/synopsis_II.md"),
+  "</p></h6>")
+
+what_is_autodry <- paste0(
+  "<h5><b><p style='color:#593196;text-align:justify;'>",
+  htmltools::includeText("data/section_content/what_is_autodry_I.md"),
+  "</p></b></h5>",
+  "<h6><p style='text-align:justify;'>",
+  htmltools::includeText("data/section_content/what_is_autodry_II.md"),
+  "</p></h6>")
 
 about_study_text <- paste0(
-  "<h6>About Our Study</h6>",
-  "We engineered a yeast library of nearly 6,000 gene deletions, ",
-  "each tagged with fluorescent markers that allow us to visualize ",
-  "autophagy as it unfolds. By placing these yeast strains under ",
-  "conditions of nitrogen starvation for 12 hours followed by ",
-  "nitrogen replenishment for 8 hours, we captured hourly snapshots ",
-  "of cellular responses, creating a time-resolved, high-content dataset.<br><br>",
-  "To make sense of this immense dataset, we applied deep learning to ",
-  "predict which cells are actively undergoing autophagy. This allowed us ",
-  "to identify subtle differences in autophagy activity and map these ",
-  "dynamics onto a “feature space” that captures each gene's unique ",
-  "impact on autophagy over time.<br><br>",
-  "Our analysis generates two key outputs that provide ",
-  "different perspectives on autophagy regulation:
-  <ol><li><b>Nutrient Response Kinetics:</b> By tracking the percentage of ",
-  "cells with active autophagy, we quantified how each mutant strain responds ",
-  "to changes in nutrient availability. Using a double-sigmoidal curve ",
-  "fitting approach, we captured the kinetics of autophagy ",
-  "activation and deactivation. This analysis reveals the sensitivity and ",
-  "timing of each gene’s response, showing how quickly autophagy ramps up ",
-  "during nutrient starvation and subsides when nutrients are replenished.</li>",
-  "<li><b>Latent Space Analysis of Autophagic Stages:</b> In addition to ",
-  "response kinetics, we applied Bayesian analysis to the neural network’s ",
-  "latent space features, identifying distinct autophagic profiles across ",
-  "mutants. This approach highlights genes with specific disruptions in ",
-  "either the formation or clearance of autophagosomes, giving us a window ",
-  "into the multi-stage regulation of autophagy. By pinpointing which genes ",
-  "impact these distinct stages, we gain deeper insights into how autophagy ",
-  "is finely controlled at each step of the process.</li></ol><br>",
-  "Through this web portal, you can dive into the autophagy profiles of ",
-  "individual genes or analyze groups of genes in the context of ",
-  "genome-wide patterns. Both nutrient response kinetics and Bayesian ",
-  "analysis of autophagic stages are available, providing insights into ",
-  "each gene’s activation timing and specific roles in ",
-  "autophagosome formation and clearance.")
+  "<p style='text-align:justify;'>",
+  htmltools::includeText("data/section_content/about_the_study_I.md"),
+  "</p>",
+  "AutoDRY provides two key outputs that provide different ",
+  "perspectives on autophagy regulation:<br>",
+  "<p style='text-align:justify;'>",
+  htmltools::includeText("data/section_content/about_the_study_II.md"),
+  "</p>")
 
 
 about_page <-
   bslib::page_fillable(
-    #home_ui
+    tags$style(HTML(".card {border-radius: 0.9rem;}")),
+    tags$style(HTML(".card2 {border-radius: 1.7rem;}")),
     bslib::card(
+      class = "card2",
       full_screen = F,
       fillable = F,
       fill = F,
-      #bslib::card_header("About", class = "bg-primary text-white"),
       bslib::card_body(
         #min_height = 300,
         bslib::layout_column_wrap(
-          width = 1/2,
-          shiny::markdown(sales_pitch),
-          shiny::markdown(paper_info)
-        )
-      ),
-      bslib::card_body(
+          width = NULL,
+          fill = F,
+          style = bslib::css(grid_template_columns = "22fr 1fr 22fr 1fr 22fr"),
+          bslib::card(
+            bslib::card_header(class = "bg-dark","  Background"),
+            shiny::markdown(synopsis)),
+          shiny::markdown(""),
+          bslib::card(
+            bslib::card_header(class = "bg-dark","  What is AutoDRY?"),
+            shiny::markdown(what_is_autodry)),
+          shiny::markdown(""),
+          bslib::card(
+            bslib::card_header(class = "bg-dark","  Citation"),
+            shiny::markdown(paper_info)
+          )
+        ),
         shiny::markdown(
           paste0(
-            "<div align='center'>",
-            "<img src='MNS_Figure_1A_v2.png' alt='Autophagy_Dynamics_Study_Overview' width='85%' height='95%' align='center'/></div>",
-            about_study_text,
-            "<hr>",
+            "<br><br><div align='center'>",
+            "<img src='MNS_Figure_1A_v2.png' alt='Autophagy_Dynamics_Study_Overview'",
+            " width='90%' height='100%' align='center'/></div><br>"
+          )
+        ),
+        bslib::layout_column_wrap(
+          width = NULL,
+          fill = F,
+          bslib::card(
+            bslib::card_header(class = "bg-dark","  About the study"),
+            shiny::markdown(about_study_text)
+          )
+        )
+      ),
+      bslib::card_footer(
+        shiny::markdown(
+          paste0(
+            "<br>",
             "<div align='center'>",
             "<a href='https://www.uio.no' target='_blank'><img src='uio.png' alt='uio' style='width:20%;height:90%;'></a>",
             "<a href='https://ous-research.no/institute' target='_blank'><img src='ous.png' alt='ous' style='width:20%'></a>",
             "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
             "<a href='https://www.med.uio.no/cancell/english/' target='_blank'><img src='cancell.png' style='width:4%;height:48%;'></a>",
             "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-            "<a href='https://arctic-autophagy.no/' target='_blank'><img src='arctic.png' style=width:8%;height:36%'></a>",
+            "<a href='https://arctic-autophagy.no/' target='_blank'><img src='arctic.png' style='width:10%;height:45%'></a>",
             "</div>")
         )
       )
@@ -181,6 +189,18 @@ downloads_page <-
       #bslib::card_header("About", class = "bg-primary text-white"),
       bslib::card_body(
         shiny::markdown("Links to file downloads will be available here.")
+      )
+    )
+  )
+
+disclaimer_page <-
+  bslib::page_fillable(
+    bslib::card(
+      #class = "bg-dark",
+      full_screen = F,
+      #bslib::card_header("About", class = "bg-primary text-white"),
+      bslib::card_body(
+        shiny::markdown("A disclaimer regarding the screening dataset will be available here.")
       )
     )
   )
@@ -241,29 +261,6 @@ bfactor_sidebar_multiple <-
     )
   )
 
-# page_bs_theme <-
-#   #bslib::bs_theme(preset = "bootstrap")
-#   bslib::bs_theme(bootswatch = "united")
-# page_bs_theme <-
-#   bslib::bs_theme_update(theme = page_bs_theme, bg = "pink", fg = "black", primary="green")
-
-    # # Controls the default grayscale palette
-    # bg = "#ffffff",
-    # fg = "black",
-    # # Controls the accent (e.g., hyperlink, button, etc) colors
-    # primary = "black",
-    # secondary = "#48DAC6",
-    # base_font = c("Grandstander", "sans-serif"),
-    # code_font = c("Courier", "monospace"),
-    # bootswatch = "bootstrap",
-    # heading_font = "'Helvetica Neue', Helvetica, sans-serif") |>
-  # bslib::bs_add_rules(
-  #   rules = ".navbar .navbar-default .navbar-inverse .navbar-static-top {
-  #                       height: 400px;
-  #                       color: pink !important;
-  #                       background-color: pink !important;
-  #               }"
-  # )
 
 ui <- bslib::page_navbar(
   tags$head(shiny::includeHTML("google_analytics.html")),
@@ -278,14 +275,8 @@ ui <- bslib::page_navbar(
           }
           "
     ),
-  #theme = bslib::bs_theme(
-  #  bootswatch = "united",
-  #  danger = "#343a40",
-  #),
   title = paste0(
     "AutoDRY: Genome-Wide Autophagy Dynamics Repository Yeast"),
-    #"AutoDRY: Genome-Wide Autophagy Dynamics Repository Yeast"),
-  #subtitle = "A web portal for exploring autophagy dynamics in yeast",
   bslib::nav_spacer(),
   bslib::nav_panel("Home", about_page),
   bslib::nav_menu(
@@ -298,19 +289,10 @@ ui <- bslib::page_navbar(
     bslib::nav_panel("Single gene perspective", bfactor_sidebar),
     bslib::nav_panel("Multiple gene perspective", bfactor_sidebar_multiple)
   ),
-  bslib::nav_panel("Data downloads", downloads_page),
-
-  #bslib::nav_item(tags$a("About", href = "https://posit.co")),
-
+  bslib::nav_panel("Downloads", downloads_page),
+  bslib::nav_panel("DISCLAIMER", disclaimer_page)
 )
 
-# Enable thematic
-#thematic::thematic_shiny(font = "auto")
-
-# Change ggplot2's default "gray" theme
-#ggplot2::theme_set(ggplot2::theme_bw(base_size = 18))
-
-# New server logic (removes the `+ theme_bw()` part)
 server <- function(input, output, session) {
 
   output$autoph_response_kinetics <- shiny::renderPlot({
@@ -352,11 +334,12 @@ server <- function(input, output, session) {
       primary_id = input$gene_id_kinetic,
       gene_info = gw_autoph_response_data$gene_info_kinetic
     )
-    shiny::HTML("<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
-                "<li>Description: ",ginf[['description']],"</li>",
-                "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
-                "<li>Response profile: ",ginf[['response_profile']],"</li>",
-                "</ul></div><br>")
+    shiny::HTML(
+      "<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
+      "<li>Description: ",ginf[['description']],"</li>",
+      "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
+      "<li>Response profile: ",ginf[['response_profile']],"</li>",
+      "</ul></div><br>")
   })
 
   output$gene_info_bf <- shiny::renderUI({
@@ -364,21 +347,13 @@ server <- function(input, output, session) {
       primary_id = input$gene_id_bf,
       gene_info = gw_autoph_competence_data$gene_info_bf
     )
-    shiny::HTML("<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
-                "<li>Description: ",ginf[['description']],"</li>",
-                "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
-                "</ul></div><br>")
+    shiny::HTML(
+      "<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
+      "<li>Description: ",ginf[['description']],"</li>",
+      "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
+      "</ul></div><br>")
   })
 
-  # observe({
-  #     updateSelectizeInput(
-  #         session,
-  #         inputId = 'gene_id_bf',
-  #         label   = 'Gene',
-  #         selected = head(unique(gw_autoph_competence_data$gene_ids), 1),
-  #         choices = unique(gw_autoph_competence_data$gene_ids)
-  #     )
-  # })
 }
 
 # Run the application
