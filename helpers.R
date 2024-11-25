@@ -13,11 +13,13 @@ show_gene_info <- function(primary_id = NULL,
   res[['name']] <- '<i>No information available</i>'
   res[['human_orthologs']] <- '<i>No information available</i>'
   res[['description']] <- ''
+  res[['response_profile']] <- ''
   res[['sgd_link']] <- '<i>No information available</i>'
   if(!is.null(primary_id) & !is.null(gene_info)){
     gene_info_id <- gene_info |>
       dplyr::filter(primary_identifier == primary_id)
     if(NROW(gene_info_id) > 0){
+      res[['response_profile']] <- gene_info_id$response_profile
       res[['name']] <- gene_info_id$genename
       res[['description']] <- gene_info_id$sgd_description
       res[['human_orthologs']] <-
@@ -235,7 +237,8 @@ plot_autophagy_competence_multi <- function(
     # ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
     #                 aes(lty=Type), col="grey30", alpha=1) +
     ggplot2::stat_density_2d(data=mat[which(mat$Plate_controls=="+"),] |>
-                               dplyr::mutate(Gene = ifelse(is.na(Gene), "WT", Gene)),
+                               dplyr::mutate(Gene = ifelse(
+                                 is.na(Gene) | Gene == "WT", "WT/Control", Gene)),
                     ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
                     geom = "polygon", col=NA) +
     ggplot2::geom_point(
@@ -260,7 +263,8 @@ plot_autophagy_competence_multi <- function(
           legend.position = "top",
           plot.margin = ggplot2::margin(2, 1, 2, 1, "cm"),
           legend.text = ggplot2::element_text(size=18),
-          legend.title = ggplot2::element_text(size=18),
+          legend.title = ggplot2::element_blank(),
+          #legend.title = ggplot2::element_text(size=18),
           axis.title.y = ggtext::element_markdown(size=18),
           axis.title.x = ggtext::element_markdown(size=18),
           axis.text = ggplot2::element_text(size=18)) +
@@ -475,7 +479,7 @@ plot_autophagy_competence <- function(competence_data = NULL,
 
 plot_response_kinetics_multi <- function(
     response_data = NULL,
-    primary_identifiers = "RTG1 / YOL067C",
+    primary_identifiers = "AAC1 / YMR056C",
     custom_scale_limits = TRUE,
     user_x = "T50 +N",
     user_y = "T50 -N",

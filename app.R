@@ -57,7 +57,7 @@ kinetics_sidebar_multiple <-
         shiny::selectizeInput(
         inputId = "gene_id_kinetic_multiple",
         label = "Select ORF/Gene mutants (max 10)",
-        selected = "RTG2 / YGL252C",
+        selected = "AAC1 / YMR056C",
         options = list(
           minItems = 1,
           maxItems = 10),
@@ -83,21 +83,21 @@ kinetics_sidebar_multiple <-
 
 
 paper_info <- paste0(
-  "<br><h6><i><a href='https://www.biorxiv.org/content/10.1101/2024.04.06.588104v1' target='_blank'>Genome-wide profiling of the hierarchical control of autophagy dynamics using deep learning</a></i></h6>",
+  "<br><h5><i><a href='https://www.biorxiv.org/content/10.1101/2024.04.06.588104v1' target='_blank'>Genome-wide profiling of the hierarchical control of autophagy dynamics using deep learning</a></i></h5>",
   "Nathalia Chica, Aram N. Andersen, Sara Orellana-Muñoz, Ignacio Garcia, Aurélie Nguéa P, ",
   "Pilar Ayuda-Durán, Linda Håkensbakken, Eline Rødningen, Christopher D. Putnam, ",
   "Manuela Zucknick, Tor Erik Rusten and Jorrit M. Enserink. ",
   "Correspondence: nathac@uio.no or j.m.enserink@ibv.uio.no")
 
 sales_pitch <- paste0(
-  "<br><b><p style='color:#593196;'>How is autophagy regulated over time and space, and how can we effectively ",
+  "<h5><br><b><p style='color:#593196;'>How is autophagy regulated over time and space, and how can we effectively ",
   "harness the mechanisms that modulate this essential process? While the ",
   "autophagy field has provided detailed insights into core molecular ",
   "regulatory pathways, a lack of systems-level data on autophagy ",
   "control and dynamics has constrained the development of predictive ",
   "models and in vivo manipulation strategies. We contend that answering ",
   "these questions requires a comprehensive understanding of genome-wide ",
-  "influences on autophagy dynamics, beyond basic on-off mechanisms.</p></b><br><br>")
+  "influences on autophagy dynamics, beyond basic on-off mechanisms.</p></b><br><br></h5>")
 
 about_study_text <- paste0(
   "<h6>About Our Study</h6>",
@@ -156,27 +156,20 @@ about_page <-
       bslib::card_body(
         shiny::markdown(
           paste0(
-            "<div align='center'><img src='MNS_Figure_1A_v2.png' alt='Autophagy_Dynamics_Study_Overview' width='85%' height='95%' align='center'/></div>",
+            "<div align='center'>",
+            "<img src='MNS_Figure_1A_v2.png' alt='Autophagy_Dynamics_Study_Overview' width='85%' height='95%' align='center'/></div>",
             about_study_text,
             "<hr>",
-            "<div align='center'><img src='uio.png' alt='uio' width='20%' height='90%'/>",
-            "<img src='ous.png' width='20%'/>",
-            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src='cancell2.png' width='5%' height='50%'/>",
-            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src='arctic.png' width='8%' height='50%'/></div>")
+            "<div align='center'>",
+            "<a href='https://www.uio.no' target='_blank'><img src='uio.png' alt='uio' style='width:20%;height:90%;'></a>",
+            "<a href='https://ous-research.no/institute' target='_blank'><img src='ous.png' alt='ous' style='width:20%'></a>",
+            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+            "<a href='https://www.med.uio.no/cancell/english/' target='_blank'><img src='cancell.png' style='width:4%;height:48%;'></a>",
+            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+            "<a href='https://arctic-autophagy.no/' target='_blank'><img src='arctic.png' style=width:8%;height:36%'></a>",
+            "</div>")
         )
       )
-      # bslib::card_body(
-      #   fillable = F,
-      #   #min_height = 150,
-      #   max_height = "150px",
-      #   height = "150px",
-      #   shiny::markdown(
-      #     paste0(
-      #       "<hr><br>",
-      #       "<div align='center'><img src='uio.png' alt='uio' width='20%' height='90%'></div>")
-      #   ),
-      #   fill = T
-      # )
     )
   )
 
@@ -216,7 +209,7 @@ bfactor_sidebar_multiple <-
         shiny::selectizeInput(
           inputId = "gene_id_bf_multiple",
           label = "Select ORF/Gene mutants (max 10)",
-          selected = "RTG2 / YGL252C",
+          selected = "AAC1 / YMR056C",
           choices =
             gw_autoph_competence_data$gene_info_bf$orf_gene_id,
           options = list(
@@ -248,11 +241,11 @@ bfactor_sidebar_multiple <-
     )
   )
 
-page_bs_theme <-
-  #bslib::bs_theme(preset = "bootstrap")
-  bslib::bs_theme(bootswatch = "united")
-page_bs_theme <-
-  bslib::bs_theme_update(theme = page_bs_theme, bg = "pink", fg = "black", primary="green")
+# page_bs_theme <-
+#   #bslib::bs_theme(preset = "bootstrap")
+#   bslib::bs_theme(bootswatch = "united")
+# page_bs_theme <-
+#   bslib::bs_theme_update(theme = page_bs_theme, bg = "pink", fg = "black", primary="green")
 
     # # Controls the default grayscale palette
     # bg = "#ffffff",
@@ -273,8 +266,10 @@ page_bs_theme <-
   # )
 
 ui <- bslib::page_navbar(
+  tags$head(shiny::includeHTML("google_analytics.html")),
   #footer = list(shinyjs::useShinyjs(), shinyauthr::loginUI("login")),
   #theme = page_bs_theme,
+  fillable_mobile = TRUE,
   theme = bslib::bs_theme(bootswatch = "pulse") |>
     bslib::bs_add_rules(
       rules = "
@@ -289,6 +284,7 @@ ui <- bslib::page_navbar(
   #),
   title = paste0(
     "AutoDRY: Genome-Wide Autophagy Dynamics Repository Yeast"),
+    #"AutoDRY: Genome-Wide Autophagy Dynamics Repository Yeast"),
   #subtitle = "A web portal for exploring autophagy dynamics in yeast",
   bslib::nav_spacer(),
   bslib::nav_panel("Home", about_page),
@@ -359,6 +355,7 @@ server <- function(input, output, session) {
     shiny::HTML("<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
                 "<li>Description: ",ginf[['description']],"</li>",
                 "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
+                "<li>Response profile: ",ginf[['response_profile']],"</li>",
                 "</ul></div><br>")
   })
 
