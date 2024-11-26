@@ -9,33 +9,37 @@ kinetic_response_params <- get_kinetic_response_params()
 
 autophagy_competence_view <- list()
 autophagy_competence_view[['single']] <-
-  bslib::card(
-    full_screen = TRUE,
-    #bslib::card_header("Autophagy competence"),
-    shiny::htmlOutput("gene_info_bf"),
-    shiny::plotOutput("autoph_competence")
+  bslib::page_fillable(
+    bslib::card(
+      full_screen = TRUE,
+      #bslib::card_header("Autophagy competence"),
+      shiny::htmlOutput("gene_info_bf"),
+      shiny::plotOutput("autoph_competence")
+    ),
+    shiny::includeHTML("data/section_content/citation_footnote.md")
   )
+
 autophagy_competence_view[['multiple']] <-
   bslib::card(
     full_screen = TRUE,
-    #bslib::card_header("Autophagy competence"),
     shiny::plotOutput("autoph_competence_multiple")
   )
 
 response_kinetics_view <- list()
 response_kinetics_view[['single']] <-
-  bslib::card(
-    full_screen = TRUE,
-    bslib::card_header(
-      shiny::textOutput("selected_gene")),
-    shiny::htmlOutput("gene_info_kinetic"),
-    #bslib::card_header("Autophagy response kinetics"),
-    shiny::plotOutput("autoph_response_kinetics")
+  bslib::page_fillable(
+    bslib::card(
+      full_screen = TRUE,
+      bslib::card_header(
+        shiny::textOutput("selected_gene")),
+      shiny::htmlOutput("gene_info_kinetic"),
+      shiny::plotOutput("autoph_response_kinetics")
+    ),
+    shiny::includeHTML("data/section_content/citation_footnote.md")
   )
 response_kinetics_view[['multiple']] <-
   bslib::card(
     full_screen = TRUE,
-    #bslib::card_header("Autophagy response kinetics"),
     shiny::plotOutput("autoph_response_kinetics_multiple")
   )
 
@@ -43,7 +47,7 @@ kinetics_sidebar <-
   bslib::page_fillable(
     bslib::layout_sidebar(
       sidebar = shiny::selectInput(
-        "gene_id_kinetic", "Select ORF/Gene mutant",
+        "gene_id_kinetic", "Select gene/ORF mutant",
         gw_autoph_response_data$gene_info_kinetic$orf_gene_id, width = "100%"),
       response_kinetics_view[['single']],
       shiny::uiOutput("selected_gene")
@@ -56,7 +60,7 @@ kinetics_sidebar_multiple <-
       sidebar = list(
         shiny::selectizeInput(
         inputId = "gene_id_kinetic_multiple",
-        label = "Select ORF/Gene mutants (max 10)",
+        label = "Highlight gene/ORF mutants (max 10)",
         selected = "AAC1 / YMR056C",
         options = list(
           minItems = 1,
@@ -210,7 +214,7 @@ bfactor_sidebar <-
     bslib::layout_sidebar(
       sidebar = list(
         shiny::selectInput(
-          "gene_id_bf", "Select ORF/Gene mutant",
+          "gene_id_bf", "Select gene/ORF mutant",
           gw_autoph_competence_data$gene_info_bf$orf_gene_id),
         shiny::selectInput(
           "bf_dnn_model", "Deep neural network (DNN) model",
@@ -228,7 +232,7 @@ bfactor_sidebar_multiple <-
       sidebar = list(
         shiny::selectizeInput(
           inputId = "gene_id_bf_multiple",
-          label = "Select ORF/Gene mutants (max 10)",
+          label = "Highlight gene/ORF mutants (max 10)",
           selected = "AAC1 / YMR056C",
           choices =
             gw_autoph_competence_data$gene_info_bf$orf_gene_id,
@@ -239,23 +243,30 @@ bfactor_sidebar_multiple <-
         #  "gene_id_bf_multiple", "Gene",
         #  gw_autoph_competence_data$gene_info_bf$orf_gene_id),
         shiny::selectInput(
-          "x_var","X-axis variable",
+          "bf_x_var",
+          "X-axis variable",
           c("Overall autophagy",
             "Autophagosome formation",
             "Autophagosome clearance"),
           selected = "Autophagosome formation"
         ),
         shiny::selectInput(
-          "y_var","Y-axis variable",
+          "bf_y_var",
+          "Y-axis variable",
           c("Overall autophagy",
             "Autophagosome formation",
             "Autophagosome clearance"),
           selected = "Autophagosome clearance"
         ),
         shiny::selectInput(
-          "bf_dnn_model_multiple", "Deep neural network (DNN) model",
+          "bf_dnn_model_multiple",
+          "Deep neural network (DNN) model",
           c("30","22")
-        )
+        ),
+        shiny::checkboxInput(
+          "bf_library_adjustment", "Perform library correction", value = F),
+        shiny::checkboxInput(
+          "bf_contour", "Add contour plot", value = F)
       ),
       autophagy_competence_view[['multiple']]
     )
@@ -314,8 +325,10 @@ server <- function(input, output, session) {
     plot_autophagy_competence_multi(
       competence_data = gw_autoph_competence_data,
       dnn_model = input$bf_dnn_model_multiple,
-      user_x = input$x_var,
-      user_y = input$y_var,
+      user_x = input$bf_x_var,
+      user_y = input$bf_y_var,
+      show_library_type_contour = input$bf_contour,
+      library_adjustment = input$bf_library_adjustment,
       primary_identifiers = input$gene_id_bf_multiple)
   })
 
@@ -338,8 +351,8 @@ server <- function(input, output, session) {
       "<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
       "<li>Description: ",ginf[['description']],"</li>",
       "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
-      "<li>Response profile: ",ginf[['response_profile']],"</li>",
-      "</ul></div><br>")
+      "<li>Autophagy perturbation response profile: ",ginf[['response_profile']],"</li>",
+      "</ul></div>")
   })
 
   output$gene_info_bf <- shiny::renderUI({
@@ -351,7 +364,7 @@ server <- function(input, output, session) {
       "<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
       "<li>Description: ",ginf[['description']],"</li>",
       "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
-      "</ul></div><br>")
+      "</ul></div>")
   })
 
 }

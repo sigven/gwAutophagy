@@ -24,9 +24,12 @@ show_gene_info <- function(primary_id = NULL,
       res[['response_profile']] <-
         paste0("<b>",gene_info_id$response_profile,"</b>")
       res[['name']] <- gene_info_id$genename
-      res[['description']] <- gene_info_id$sgd_description
-      res[['human_orthologs']] <-
-        gene_info_id$human_ortholog_links
+      res[['description']] <- paste0(
+        gene_info_id$sgd_description, " [<a href='#sgd_citation'>1</a>, <a href='#genome_alliance_citation'>2</a>]")
+      if(!is.na(gene_info_id$human_ortholog_links)){
+        res[['human_orthologs']] <-
+          gene_info_id$human_ortholog_links
+      }
       if(!is.na(gene_info_id$sgd_id)){
         res[['sgd_link']] <- paste0(
           "<a href='https://www.yeastgenome.org/locus/",
@@ -105,6 +108,8 @@ plot_autophagy_competence_multi <- function(
     competence_data = NULL,
     primary_identifiers = NULL,
     dnn_model = "30",
+    library_adjustment = FALSE,
+    show_library_type_contour = FALSE,
     user_x = "Autophagosome formation",
     user_y = "Autophagosome clearance"){
 
@@ -204,20 +209,56 @@ plot_autophagy_competence_multi <- function(
         NCells = mean(NCells))
     BF_response <- BF_response[which(BF_response$d==min(BF_response$d)),]
     BF_response <- BF_response[which(BF_response$NCells==max(BF_response$NCells)),]
-
-    # BF_response <- BF_response |>
-    #   dplyr::group_by(TimeR) |>
-    #   dplyr::mutate(d=abs(log_BFt_WT.ATG1_30-median(log_BFt_WT.ATG1_30)) +
-    #            abs(log_BFt_WT.VAM6_30-median(log_BFt_WT.VAM6_30)) +
-    #            abs(log_BFt_VAM6.ATG1_30-median(log_BFt_VAM6.ATG1_30)) +
-    #            abs(log_BFt_WT.ATG1_22-median(log_BFt_WT.ATG1_22)) +
-    #            abs(log_BFt_WT.VAM6_22-median(log_BFt_WT.VAM6_22)) +
-    #            abs(log_BFt_VAM6.ATG1_22-median(log_BFt_VAM6.ATG1_22))) |>
-    #   dplyr::group_by(Plate, Position) |>
-    #   dplyr::mutate(d=mean(d))
-    # BF_response <- BF_response[which(BF_response$d==min(BF_response$d)),]
     Positions <- c(Positions,paste(BF_response$Plate, BF_response$Position)[1])
   }
+
+  if(library_adjustment == TRUE){
+    mat_lib <- mat[is.na(mat$Plate_controls),] |>
+      dplyr::mutate(
+        mean_x = mean(X, na.rm = T),
+        mean_y = mean(Y, na.rm = T),
+        sd_x = sd(X, na.rm = T),
+        sd_y = sd(Y, na.rm = T)) |>
+      dplyr::group_by(Type) %>%
+      dplyr::summarise(
+        mean_type_x = mean(X, na.rm = T),
+        mean_type_y = mean(Y, na.rm = T),
+        sd_type_x = sd(X, na.rm = T),
+        sd_type_y = sd(Y, na.rm = T),
+        mean_x = mean(mean_x, na.rm = T),
+        mean_y = mean(mean_y, na.rm = T),
+        sd_x = mean(sd_x, na.rm = T),
+        sd_y = mean(sd_y, na.rm = T))
+
+    mat$Type[which(mat$Plate_controls == "+")] <-
+      "KO"
+    mat$Type[which(mat$Plate_controls == "+" & is.na(mat$ORF))] <-
+      "WT"
+
+    mat_wt <- mat[which(mat$Plate_controls == "+" & is.na(mat$ORF)),] |>
+      dplyr::mutate(mean_x = mean(X),
+             mean_y = mean(Y),
+             sd_x = sd(X),
+             sd_y = sd(Y)) |>
+      dplyr::group_by(Type) |>
+      dplyr::summarise(mean_type_x = mean(X, na.rm = T),
+                mean_type_y = mean(Y, na.rm = T),
+                sd_type_x = sd(X, na.rm = T),
+                sd_type_y = sd(Y, na.rm = T),
+                mean_x = mean(mean_x, na.rm = T),
+                mean_y = mean(mean_y, na.rm = T),
+                sd_x = mean(sd_x, na.rm = T),
+                sd_y = mean(sd_y, na.rm = T))
+    mat_wt[,6:9] <- mat_lib[1,6:9]
+    mat_wt[1,4:5] <- mat_wt[1,8:9]
+    mat_lib <- rbind(mat_lib, mat_wt)
+
+    mat$X <-  mat$X + (mat_lib$mean_x-mat_lib$mean_type_x)[match(mat$Type,mat_lib$Type)]
+    mat$Y <- mat$Y + (mat_lib$mean_y-mat_lib$mean_type_y)[match(mat$Type,mat_lib$Type)]
+    mat$X <- mat$X*((mat_lib$sd_x/mat_lib$sd_type_x)[match(mat$Type,mat_lib$Type)])
+    mat$Y <- mat$Y*((mat_lib$sd_y/mat_lib$sd_type_y)[match(mat$Type,mat_lib$Type)])
+  }
+
 
   mat <- competence_data[['bf_overall']] |>
     as.data.frame()
@@ -268,11 +309,16 @@ plot_autophagy_competence_multi <- function(
           plot.margin = ggplot2::margin(2, 1, 2, 1, "cm"),
           legend.text = ggplot2::element_text(size=18),
           legend.title = ggplot2::element_blank(),
-          #legend.title = ggplot2::element_text(size=18),
           axis.title.y = ggtext::element_markdown(size=18),
           axis.title.x = ggtext::element_markdown(size=18),
           axis.text = ggplot2::element_text(size=18)) +
     ggplot2::guides(alpha = FALSE)
+
+  if(show_library_type_contour == T){
+    p <- p + ggplot2::stat_density_2d(
+      data = mat[is.na(mat$Plate_controls),],
+      ggplot2::aes(lty=Type), col="grey30", alpha=1)
+  }
 
   return(p)
 
@@ -427,7 +473,7 @@ plot_autophagy_competence <- function(competence_data = NULL,
         panel.grid.minor = ggplot2::element_blank(),
         plot.title = ggplot2::element_text(size=20, face="bold"),
         axis.text = ggplot2::element_text(size=18),
-        plot.margin = ggplot2::margin(2, 1, 2, 1, "cm"),
+        plot.margin = ggplot2::margin(2, 1, 1, 1, "cm"),
         axis.title.y = ggtext::element_markdown(size = 18),
         axis.title.x = ggtext::element_markdown(size = 18),
         legend.text = ggplot2::element_text(size=18, family = "Helvetica"),
@@ -470,7 +516,7 @@ plot_autophagy_competence <- function(competence_data = NULL,
         panel.grid.minor = ggplot2::element_blank(),
         plot.title = ggplot2::element_text(size=20, face="bold"),
         axis.text = ggplot2::element_text(size=18),
-        plot.margin = ggplot2::margin(2, 1, 2, 1, "cm"),
+        plot.margin = ggplot2::margin(2, 1, 1, 1, "cm"),
         axis.title.y = ggtext::element_markdown(size = 18),
         axis.title.x = ggtext::element_markdown(size = 18),
         legend.text = ggplot2::element_text(size=18),
@@ -753,7 +799,7 @@ plot_response_kinetics <- function(response_data = NULL){
       plot.title = ggplot2::element_text(size=20, face="bold"),
       axis.title = ggplot2::element_text(size=18),
       axis.text = ggplot2::element_text(size=18),
-      plot.margin = ggplot2::margin(1, 1, 2, 2, "cm"),
+      plot.margin = ggplot2::margin(1, 1, 1, 2, "cm"),
       legend.text = ggplot2::element_text(size=18),
       legend.title = ggplot2::element_blank()
     )

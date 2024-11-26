@@ -1,1 +1,1 @@
-Nathalia Chica, Aram N. Andersen, Sara Orellana-Muñoz, Ignacio Garcia, Aurélie Nguéa P, Pilar Ayuda-Durán, Linda Håkensbakken, Eline Rødningen, Christopher D. Putnam, Manuela Zucknick, Tor Erik Rusten, and Jorrit M. Enserink.
+Nathalia Chica, Aram N. Andersen, Sara Orellana-Muñoz, Ignacio Garcia, Aurélie Nguéa P, Sigve Nakken, Pilar Ayuda-Durán, Linda Håkensbakken, Sebastian W. Schultz, Eline Rødningen, Christopher D. Putnam, Manuela Zucknick, Tor Erik Rusten, and Jorrit M. Enserink.
