@@ -7,6 +7,43 @@ gw_autoph_response_data <- load_kinetic_response_data()
 gw_autoph_competence_data <- load_autophagy_competence_data()
 kinetic_response_params <- get_kinetic_response_params()
 
+navbar_js <- "@media (max-width: 800px) {
+    .navbar-header {
+        float: none;
+    }
+    .navbar-left,.navbar-right {
+        float: none !important;
+    }
+    .navbar-toggle {
+        display: block;
+    }
+    .navbar-collapse {
+        border-top: 1px solid transparent;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .navbar-fixed-top {
+        top: 0;
+        border-width: 0 0 1px;
+    }
+    .navbar-collapse.collapse {
+        display: none!important;
+    }
+    .navbar-nav {
+        float: none!important;
+        margin-top: 7.5px;
+    }
+    .navbar-nav>li {
+        float: none;
+    }
+    .navbar-nav>li>a {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .collapse.in{
+        display:block !important;
+    }
+}"
+
 autophagy_competence_view <- list()
 autophagy_competence_view[['single']] <-
   bslib::page_fillable(
@@ -48,7 +85,8 @@ kinetics_sidebar <-
     bslib::layout_sidebar(
       sidebar = shiny::selectInput(
         "gene_id_kinetic", "Select gene/ORF mutant",
-        gw_autoph_response_data$gene_info_kinetic$orf_gene_id, width = "100%"),
+        gw_autoph_response_data$gene_info_kinetic$orf_gene_id,
+        width = "100%"),
       response_kinetics_view[['single']],
       shiny::uiOutput("selected_gene")
     )
@@ -123,11 +161,31 @@ about_study_text <- paste0(
   htmltools::includeText("data/section_content/about_the_study_II.md"),
   "</p>")
 
+disclaimer_text <- paste0(
+  "<p style='text-align:justify;'>",
+  htmltools::includeText("data/section_content/disclaimer.md"),
+  "</p>")
+
+autodry_footer <-
+  bslib::card_footer(
+    shiny::markdown(
+      paste0(
+        "<br>",
+        "<div align='center'>",
+        "<a href='https://www.uio.no' target='_blank'><img src='uio.png' alt='uio' style='width:20%;height:90%;'></a>",
+        "<a href='https://ous-research.no/institute' target='_blank'><img src='ous.png' alt='ous' style='width:20%'></a>",
+        "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "<a href='https://www.med.uio.no/cancell/english/' target='_blank'><img src='cancell.png' style='width:4%;height:48%;'></a>",
+        "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "<a href='https://arctic-autophagy.no/' target='_blank'><img src='arctic.png' style='width:10%;height:45%'></a>",
+        "</div>")
+    )
+  )
 
 about_page <-
   bslib::page_fillable(
     tags$style(HTML(".card {border-radius: 0.9rem;}")),
-    tags$style(HTML(".card2 {border-radius: 1.7rem;}")),
+    tags$style(HTML(".card2 {border-radius: 0.1rem;}")),
     bslib::card(
       class = "card2",
       full_screen = F,
@@ -138,7 +196,8 @@ about_page <-
         bslib::layout_column_wrap(
           width = NULL,
           fill = F,
-          style = bslib::css(grid_template_columns = "22fr 1fr 22fr 1fr 22fr"),
+          style = bslib::css(
+            grid_template_columns = "22fr 1fr 22fr 1fr 22fr"),
           bslib::card(
             bslib::card_header(class = "bg-dark","  Background"),
             shiny::markdown(synopsis)),
@@ -168,20 +227,7 @@ about_page <-
           )
         )
       ),
-      bslib::card_footer(
-        shiny::markdown(
-          paste0(
-            "<br>",
-            "<div align='center'>",
-            "<a href='https://www.uio.no' target='_blank'><img src='uio.png' alt='uio' style='width:20%;height:90%;'></a>",
-            "<a href='https://ous-research.no/institute' target='_blank'><img src='ous.png' alt='ous' style='width:20%'></a>",
-            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-            "<a href='https://www.med.uio.no/cancell/english/' target='_blank'><img src='cancell.png' style='width:4%;height:48%;'></a>",
-            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-            "<a href='https://arctic-autophagy.no/' target='_blank'><img src='arctic.png' style='width:10%;height:45%'></a>",
-            "</div>")
-        )
-      )
+      autodry_footer
     )
   )
 
@@ -199,15 +245,29 @@ downloads_page <-
 
 disclaimer_page <-
   bslib::page_fillable(
+    tags$style(HTML(".card {border-radius: 0.9rem;}")),
+    tags$style(HTML(".card2 {border-radius: 0rem}")),
     bslib::card(
-      #class = "bg-dark",
+      class = "card2",
       full_screen = F,
-      #bslib::card_header("About", class = "bg-primary text-white"),
+      fillable = F,
+      fill = F,
       bslib::card_body(
-        shiny::markdown("A disclaimer regarding the screening dataset will be available here.")
-      )
+        bslib::layout_column_wrap(
+          width = NULL,
+          fill = T,
+          bslib::card(
+            bslib::card_header(class = "bg-dark","  DISCLAIMER"),
+            bslib::card_body(
+              shiny::markdown(disclaimer_text)
+            )
+          )
+        )
+      ),
+      autodry_footer
     )
   )
+
 
 bfactor_sidebar <-
   bslib::page_fillable(
@@ -264,7 +324,7 @@ bfactor_sidebar_multiple <-
           c("30","22")
         ),
         shiny::checkboxInput(
-          "bf_library_adjustment", "Perform library correction", value = F),
+         "bf_library_adjustment", "Perform library correction", value = F),
         shiny::checkboxInput(
           "bf_contour", "Add contour plot", value = F)
       ),
@@ -274,20 +334,32 @@ bfactor_sidebar_multiple <-
 
 
 ui <- bslib::page_navbar(
-  tags$head(shiny::includeHTML("google_analytics.html")),
+  tags$head(
+    shiny::includeHTML("google_analytics.html")),
+  # tags$style(HTML(
+  #  '
+  #      .navbar-brand {font-size:1.2em;}
+  #      .nav.navbar-nav {font-size:1.2em;}
+  #     '
+  # )),
   #footer = list(shinyjs::useShinyjs(), shinyauthr::loginUI("login")),
   #theme = page_bs_theme,
   fillable_mobile = TRUE,
-  theme = bslib::bs_theme(bootswatch = "pulse") |>
+  theme = bslib::bs_theme(
+    bootswatch = "pulse") |>
     bslib::bs_add_rules(
-      rules = "
-          .navbar.navbar-default {
-                background-color: $primary !important;
-          }
-          "
+      list(
+        ".navbar {padding-left: 10px; padding-right: 10px;}",
+        ".nav.navbar-nav {font-size:1.2em;}",
+        ".navbar.navbar-default {
+          background-color: $primary !important;
+        }"
+      )
     ),
-  title = paste0(
-    "AutoDRY: Genome-Wide Autophagy Dynamics Repository Yeast"),
+  window_title = "AutoDRY",
+  title = htmltools::span(
+    "AutoDRY: Autophagy Dynamics Repository Yeast",
+    style="font-size:1.6rem; padding-left:10px;"),
   bslib::nav_spacer(),
   bslib::nav_panel("Home", about_page),
   bslib::nav_menu(
@@ -351,7 +423,8 @@ server <- function(input, output, session) {
       "<div><ul><li>Genename: ",ginf[['sgd_link']],"</li>",
       "<li>Description: ",ginf[['description']],"</li>",
       "<li>Human orthologs: ",ginf[['human_orthologs']],"</li>",
-      "<li>Autophagy perturbation response profile: ",ginf[['response_profile']],"</li>",
+      "<li>Autophagy perturbation response profile: ",
+      ginf[['response_profile']],"</li>",
       "</ul></div>")
   })
 

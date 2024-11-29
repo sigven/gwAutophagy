@@ -212,19 +212,36 @@ plot_autophagy_competence_multi <- function(
     Positions <- c(Positions,paste(BF_response$Plate, BF_response$Position)[1])
   }
 
+
+  mat <- competence_data[['bf_overall']] |>
+    as.data.frame()
+  mat_select <- competence_data[['bf_overall']] |>
+    subset(paste(Plate, Position) %in% Positions) |>
+    as.data.frame()
+
+  mat$Type <- competence_data[['dnn_preds']]$Type[match(
+    paste(mat$Gene, mat$ORF),paste(
+      competence_data[['dnn_preds']]$Gene,
+      competence_data[['dnn_preds']]$ORF))]
+
+  # mat$Type <-
+  #   factor(mat$Type, levels = c("KO", "DAmP"),
+  #          ordered = T)
+  # mat <- mat |> dplyr::arrange(Type)
+
   if(library_adjustment == TRUE){
     mat_lib <- mat[is.na(mat$Plate_controls),] |>
       dplyr::mutate(
-        mean_x = mean(X, na.rm = T),
-        mean_y = mean(Y, na.rm = T),
-        sd_x = sd(X, na.rm = T),
-        sd_y = sd(Y, na.rm = T)) |>
+        mean_x = mean(!!rlang::sym(X), na.rm = T),
+        mean_y = mean(!!rlang::sym(Y), na.rm = T),
+        sd_x = sd(!!rlang::sym(X), na.rm = T),
+        sd_y = sd(!!rlang::sym(Y), na.rm = T)) |>
       dplyr::group_by(Type) %>%
       dplyr::summarise(
-        mean_type_x = mean(X, na.rm = T),
-        mean_type_y = mean(Y, na.rm = T),
-        sd_type_x = sd(X, na.rm = T),
-        sd_type_y = sd(Y, na.rm = T),
+        mean_type_x = mean(!!rlang::sym(X), na.rm = T),
+        mean_type_y = mean(!!rlang::sym(Y), na.rm = T),
+        sd_type_x = sd(!!rlang::sym(X), na.rm = T),
+        sd_type_y = sd(!!rlang::sym(Y), na.rm = T),
         mean_x = mean(mean_x, na.rm = T),
         mean_y = mean(mean_y, na.rm = T),
         sd_x = mean(sd_x, na.rm = T),
@@ -236,51 +253,46 @@ plot_autophagy_competence_multi <- function(
       "WT"
 
     mat_wt <- mat[which(mat$Plate_controls == "+" & is.na(mat$ORF)),] |>
-      dplyr::mutate(mean_x = mean(X),
-             mean_y = mean(Y),
-             sd_x = sd(X),
-             sd_y = sd(Y)) |>
+      dplyr::mutate(
+        mean_x = mean(!!rlang::sym(X)),
+        mean_y = mean(!!rlang::sym(Y)),
+        sd_x = sd(!!rlang::sym(X)),
+        sd_y = sd(!!rlang::sym(Y))) |>
       dplyr::group_by(Type) |>
-      dplyr::summarise(mean_type_x = mean(X, na.rm = T),
-                mean_type_y = mean(Y, na.rm = T),
-                sd_type_x = sd(X, na.rm = T),
-                sd_type_y = sd(Y, na.rm = T),
-                mean_x = mean(mean_x, na.rm = T),
-                mean_y = mean(mean_y, na.rm = T),
-                sd_x = mean(sd_x, na.rm = T),
-                sd_y = mean(sd_y, na.rm = T))
+      dplyr::summarise(
+        mean_type_x = mean(!!rlang::sym(X), na.rm = T),
+        mean_type_y = mean(!!rlang::sym(Y), na.rm = T),
+        sd_type_x = sd(!!rlang::sym(X), na.rm = T),
+        sd_type_y = sd(!!rlang::sym(Y), na.rm = T),
+        mean_x = mean(mean_x, na.rm = T),
+        mean_y = mean(mean_y, na.rm = T),
+        sd_x = mean(sd_x, na.rm = T),
+        sd_y = mean(sd_y, na.rm = T))
     mat_wt[,6:9] <- mat_lib[1,6:9]
     mat_wt[1,4:5] <- mat_wt[1,8:9]
     mat_lib <- rbind(mat_lib, mat_wt)
 
-    mat$X <-  mat$X + (mat_lib$mean_x-mat_lib$mean_type_x)[match(mat$Type,mat_lib$Type)]
-    mat$Y <- mat$Y + (mat_lib$mean_y-mat_lib$mean_type_y)[match(mat$Type,mat_lib$Type)]
-    mat$X <- mat$X*((mat_lib$sd_x/mat_lib$sd_type_x)[match(mat$Type,mat_lib$Type)])
-    mat$Y <- mat$Y*((mat_lib$sd_y/mat_lib$sd_type_y)[match(mat$Type,mat_lib$Type)])
+    mat[,X] <-  mat[,X] + (mat_lib$mean_x-mat_lib$mean_type_x)[match(mat$Type,mat_lib$Type)]
+    mat[,Y] <- mat[,Y] + (mat_lib$mean_y-mat_lib$mean_type_y)[match(mat$Type,mat_lib$Type)]
+    mat[,X] <- mat[,X] *((mat_lib$sd_x/mat_lib$sd_type_x)[match(mat$Type,mat_lib$Type)])
+    mat[,Y] <- mat[,Y] *((mat_lib$sd_y/mat_lib$sd_type_y)[match(mat$Type,mat_lib$Type)])
   }
-
-
-  mat <- competence_data[['bf_overall']] |>
-    as.data.frame()
-  mat_select <- competence_data[['bf_overall']] |>
-    subset(paste(Plate, Position) %in% Positions) |>
-    as.data.frame()
 
   mat$X <- mat[,X]
   mat$Y <- mat[,Y]
   mat_select$X <- mat_select[,X]
   mat_select$Y <- mat_select[,Y]
 
-  mat$Type <- competence_data[['dnn_preds']]$Type[match(
-    paste(mat$Gene, mat$ORF),paste(
-      competence_data[['dnn_preds']]$Gene,
-      competence_data[['dnn_preds']]$ORF))]
-
+  mat_select <- mat_select |>
+    dplyr::mutate(Gene = dplyr::if_else(
+      is.na(Plate_controls) &
+        is.na(Gene),
+      as.character(ORF),
+      as.character(Gene)
+    ))
 
   p <- ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
     ggplot2::geom_point(col="lightgray", size=0.9, pch=16, alpha=0.8) +
-    # ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
-    #                 aes(lty=Type), col="grey30", alpha=1) +
     ggplot2::stat_density_2d(data=mat[which(mat$Plate_controls=="+"),] |>
                                dplyr::mutate(Gene = ifelse(
                                  is.na(Gene) | Gene == "WT", "WT/Control", Gene)),
@@ -317,7 +329,8 @@ plot_autophagy_competence_multi <- function(
   if(show_library_type_contour == T){
     p <- p + ggplot2::stat_density_2d(
       data = mat[is.na(mat$Plate_controls),],
-      ggplot2::aes(lty=Type), col="grey30", alpha=1)
+      ggplot2::aes(lty=Type), col="grey30", alpha=1) +
+      ggplot2::scale_linetype_manual(values=c("KO" = 1, "DAmP" = 2))
   }
 
   return(p)
@@ -529,13 +542,13 @@ plot_autophagy_competence <- function(competence_data = NULL,
 
 plot_response_kinetics_multi <- function(
     response_data = NULL,
-    primary_identifiers = "AAC1 / YMR056C",
+    #primary_identifiers = "AAC1 / YMR056C",
+    primary_identifiers = NULL,
     custom_scale_limits = TRUE,
     user_x = "T50 +N",
     user_y = "T50 -N",
     use_perturbation_data = FALSE,
-    show_library_type_contour = FALSE,
-    Value = "Perturbation"){
+    show_library_type_contour = FALSE){
 
 
   Value = "Value"
@@ -588,19 +601,21 @@ plot_response_kinetics_multi <- function(
 
   mat <- reshape2::dcast(response_data[['ds_parms']][which(
     response_data[['ds_parms']]$Parameter %in% c(X,Y)),],
-               Plate+Position+ORF+Gene+ Reference_sets~Parameter,
+               Plate+Position+ORF+Gene+primary_identifier+Reference_sets~Parameter,
                value.var = Value)
-
-  mat_select <- dcast(response_data[['ds_parms_comb']][which(
-    response_data[['ds_parms_comb']]$Parameter %in% c(X,Y)),] |>
-      subset(paste(Plate, Position) %in% Positions),
-    Plate+Position+ORF+Gene + Reference_sets+Plate_controls~Parameter,
-    value.var = Value)
-
   mat$X <- mat[,X]
   mat$Y <- mat[,Y]
-  mat_select$X <- mat_select[,X]
-  mat_select$Y <- mat_select[,Y]
+
+  mat_select <- NULL
+  if(length(Positions) > 0 & !is.null(primary_identifiers)){
+    mat_select <- dcast(response_data[['ds_parms_comb']][which(
+      response_data[['ds_parms_comb']]$Parameter %in% c(X,Y)),] |>
+        subset(paste(Plate, Position) %in% Positions),
+      Plate+Position+ORF+Gene + Reference_sets+Plate_controls~Parameter,
+      value.var = Value)
+    mat_select$X <- mat_select[,X]
+    mat_select$Y <- mat_select[,Y]
+  }
 
   #Filter, replace manual control of scale?
   if(custom_scale_limits == TRUE){
@@ -619,28 +634,44 @@ plot_response_kinetics_multi <- function(
     y_upper_bound <- max(mat$Y, na.rm = T)
   }
 
+  mat$X[mat$X < x_lower_bound] <- x_lower_bound
+  mat$X[mat$X > x_upper_bound] <- x_upper_bound
+  mat$Y[mat$Y < y_lower_bound] <- y_lower_bound
+  mat$Y[mat$Y > y_upper_bound] <- y_upper_bound
+  if(!is.null(mat_select)){
+    mat_select$X[mat_select$X < x_lower_bound] <- x_lower_bound
+    mat_select$X[mat_select$X > x_upper_bound] <- x_upper_bound
+    mat_select$Y[mat_select$Y < y_lower_bound] <- y_lower_bound
+    mat_select$Y[mat_select$Y > y_upper_bound] <- y_upper_bound
+
+    mat_select <- mat_select |>
+      dplyr::mutate(Gene = dplyr::if_else(
+        is.na(Plate_controls) &
+          is.na(Gene),
+        as.character(ORF),
+        as.character(Gene)
+      ))
+  }
+
+  ## Increase bounds in plot to show labels of outliers
+  x_lower_bound <- x_lower_bound - 0.05 * abs(x_lower_bound)
+  x_upper_bound <- x_upper_bound + 0.05 * abs(x_upper_bound)
+  y_lower_bound <- y_lower_bound - 0.05 * abs(y_lower_bound)
+  y_upper_bound <- y_upper_bound + 0.05 * abs(y_upper_bound)
+
   mat$Type <- response_data[['dnn_preds']]$Type[match(paste(
     mat$Gene, mat$ORF),paste(
       response_data[['dnn_preds']]$Gene,
       response_data[['dnn_preds']]$ORF))]
 
-  p <- ggplot2::ggplot(mat, ggplot2::aes(X, Y))+
-    ggplot2::geom_point(col="lightgray", size=1.4, pch=19, alpha=0.8)+
+  p <- ggplot2::ggplot(
+    mat, ggplot2::aes(
+      X, Y)) +
+    ggplot2::geom_point(
+      col="lightgray", size=1.4, pch=19, alpha=0.8)+
     ggplot2::geom_point(
       data=mat[which(!is.na(mat$Reference_sets)),],
       ggplot2::aes(col=Reference_sets), size=1.5)+
-    ggplot2::geom_point(
-      data=mat_select, ggplot2::aes(), pch=19)+
-    ggrepel::geom_text_repel(
-      data=mat_select,
-      ggplot2::aes(label=Gene),
-      force=2, size=5.5,
-      nudge_x = 0.3, nudge_y = 0.3,
-      max.overlaps = Inf,
-      min.segment.length = 0,
-      segment.size = 0.9)+
-    ggplot2::xlim(x_lower_bound,x_upper_bound)+
-    ggplot2::ylim(y_lower_bound,y_upper_bound)+
     ggplot2::labs(x=X, y=Y) +
     ggsci::scale_fill_jama() +
     ggsci::scale_color_d3() +
@@ -654,11 +685,26 @@ plot_response_kinetics_multi <- function(
       legend.title = ggplot2::element_blank(),
       panel.grid.major = ggplot2::element_blank(),
       panel.grid.minor = ggplot2::element_blank())
+  if(!is.null(mat_select)){
+    p <- p +
+      ggplot2::geom_point(
+        data=mat_select, ggplot2::aes(), pch=21)+
+      ggrepel::geom_text_repel(
+        data=mat_select,
+        ggplot2::aes(label=Gene),
+        force=2, size=5.5,
+        nudge_x = 0.3, nudge_y = 0.3,
+        max.overlaps = Inf,
+        min.segment.length = 0,
+        segment.size = 0.9)
+
+  }
 
   if(show_library_type_contour == T){
     p <- p + ggplot2::stat_density_2d(
       data=mat[,],
-      ggplot2::aes(lty=Type), col="grey30", alpha=1)
+      ggplot2::aes(lty=Type), col="grey30", alpha=1) +
+      ggplot2::scale_linetype_manual(values=c("KO" = 1, "DAmP" = 2))
   }
 
   return(p)
