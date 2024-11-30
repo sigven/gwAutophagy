@@ -5,7 +5,7 @@ The results and data obtained from this genome-wide screen in yeast are provided
 Therefore, users are encouraged to conduct additional experiments and validations, including targeted disruption of the ORF of interest, evaluate growth conditions, and treat this data as a resource for generating hypotheses rather than definitive proof.</span>
 
 <h6><b>Liability and Indemnification</b></h6>
-Neither the authors of this study, their institutions, affiliates, nor any contributors to this work shall be held liable for any errors or omissions in the data or for any damage, whether direct, indirect, incidental, special, consequential, or other, arising out of or in connection with the use of this data. Furthermore, the results from this screening is not intended for clinical or diagnostic applications and should not be used as a substitute for professional medical advice, diagnosis, or treatment.
+Neither the authors of this study, their institutions, affiliates, nor any contributors to this work shall be held liable for any errors or omissions in the data or for any damage, whether direct, indirect, incidental, special, consequential, or other, arising out of or in connection with the use of this data. Furthermore, the results from this screening are not intended for clinical or diagnostic applications and should not be used as a substitute for professional medical advice, diagnosis, or treatment.
 
 By accessing and utilizing any data from the AutoDRY repository, users agree to indemnify, defend, and hold harmless the authors, their institutions, and affiliates from any claims, liabilities, damages, or losses that may result.
 

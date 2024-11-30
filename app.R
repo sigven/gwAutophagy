@@ -335,7 +335,8 @@ bfactor_sidebar_multiple <-
 
 ui <- bslib::page_navbar(
   tags$head(
-    shiny::includeHTML("google_analytics.html")),
+    shiny::includeHTML("google_analytics.html"),
+    tags$link(rel="shortcut icon", href="favicon-ous.svg")),
   # tags$style(HTML(
   #  '
   #      .navbar-brand {font-size:1.2em;}
@@ -349,7 +350,7 @@ ui <- bslib::page_navbar(
     bootswatch = "pulse") |>
     bslib::bs_add_rules(
       list(
-        ".navbar {padding-left: 10px; padding-right: 10px;}",
+        ".navbar {padding-left: 10px; padding-right: 20px;}",
         ".nav.navbar-nav {font-size:1.2em;}",
         ".navbar.navbar-default {
           background-color: $primary !important;
@@ -363,17 +364,26 @@ ui <- bslib::page_navbar(
   bslib::nav_spacer(),
   bslib::nav_panel("Home", about_page),
   bslib::nav_menu(
-    "Autophagy response kinetics",
-    bslib::nav_panel("Single gene perspective", kinetics_sidebar),
-    bslib::nav_panel("Multiple genes perspective", kinetics_sidebar_multiple)
+    "Data Explorer",
+    bslib::nav_panel("Response kinetics - individual", kinetics_sidebar),
+    bslib::nav_panel("Response kinetics - global", kinetics_sidebar_multiple),
+    bslib::nav_panel("Autophagy competence - individual", bfactor_sidebar),
+    bslib::nav_panel("Autophagy competence - global", bfactor_sidebar_multiple)
   ),
-  bslib::nav_menu(
-    "Autophagy competence",
-    bslib::nav_panel("Single gene perspective", bfactor_sidebar),
-    bslib::nav_panel("Multiple gene perspective", bfactor_sidebar_multiple)
-  ),
+  # bslib::nav_menu(
+  #   "Autophagy response kinetics",
+  #   bslib::nav_panel("Single gene perspective", kinetics_sidebar),
+  #   bslib::nav_panel("Multiple genes perspective", kinetics_sidebar_multiple)
+  # ),
+  # bslib::nav_menu(
+  #   "Autophagy competence",
+  #   bslib::nav_panel("Single gene perspective", bfactor_sidebar),
+  #   bslib::nav_panel("Multiple gene perspective", bfactor_sidebar_multiple)
+  # ),
   bslib::nav_panel("Downloads", downloads_page),
-  bslib::nav_panel("DISCLAIMER", disclaimer_page)
+  bslib::nav_panel(htmltools::span(
+    "DISCLAIMER", style="padding-right:10px;"), disclaimer_page)
+  #bslib::nav_panel("DISCLAIMER", disclaimer_page)
 )
 
 server <- function(input, output, session) {

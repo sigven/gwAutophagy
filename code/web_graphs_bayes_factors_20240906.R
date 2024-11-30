@@ -262,7 +262,10 @@ ggplot(mat[is.na(mat$Plate_controls),], aes(X, Y))+
                   max.overlaps = Inf,
                   min.segment.length = 0,
                   segment.size = 0.3)+
-  labs(x=gsub("\\.",":",gsub("_"," ",X)), y=gsub("\\.",":",gsub("_"," ",Y)), color="Reference sets", linetype="Library")+
+  labs(x=gsub("\\.",":",gsub("_"," ",X)),
+       y=gsub("\\.",":",gsub("_"," ",Y)),
+       color="Reference sets",
+       linetype="Library")+
   scale_fill_jama()+
   scale_color_d3()+
   scale_linetype_manual(values=c(2,1))+
