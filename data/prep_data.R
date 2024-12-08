@@ -1,4 +1,5 @@
-## Script to prepare data, utilize https://www.fstpackage.org/ for faster read/write
+## Script to prepare data,
+## utilize https://www.fstpackage.org/ for faster read/write
 
 my_log4r_layout <- function(level, ...) {
   paste0(format(Sys.time()), " - gwAutophagyApp - ",
@@ -18,42 +19,40 @@ clean_internal_gene_orfs <- function(dataset = NULL){
   dataset <- dataset |>
     dplyr::mutate(record_idx = dplyr::row_number())
 
-  ## Both Gene and ORF are present
+  ## Only Gene is present (ORF is missing) - WT
+  tmp0 <- dataset |>
+    dplyr::filter(is.na(ORF) & !is.na(Gene))
+
+  ## Both Gene and ORF are present - confident entry
   tmp1 <- dataset |>
     dplyr::filter(!is.na(ORF) & !is.na(Gene)) |>
     dplyr::mutate(Gene2 = Gene, ORF2 = ORF)
 
-  ## Only ORF is present (Gene is missing) - skip if ORF is part of tmp1 dataset
+  ## Only ORF is present - Gene is missing)
+  ## - here, we exclude records for which records with the same ORF
+  ##  (and Gene) are part of tmp1 dataset; some 44 ORFs carry this property
+  ##   Rationale: ORF is a unique identifier, users will likely get confused
+  ##.           if they can choose between 'YCL023C' and 'YCL023C / ATG22'
   tmp2 <- dataset |>
     dplyr::filter(!is.na(ORF) & is.na(Gene)) |>
-    dplyr::anti_join(tmp1, by = "ORF")
-
-  ## Only Gene is present (ORF is missing) - WT
-  tmp0 <- dataset |>
-    dplyr::filter(is.na(ORF) & !is.na(Gene))
+    dplyr::anti_join(tmp1, by = "ORF") |>
+    dplyr::mutate(ORF2 = ORF, Gene2 = Gene) |>
+    dplyr::distinct()
 
   if(NROW(tmp0) > 0){
     tmp0 <- tmp0 |>
       dplyr::mutate(Gene2 = NA, ORF2 = "WT")
   }
-  gene_orfs_full <- tmp1 |>
-    dplyr::select(Gene2, ORF2) |>
-    dplyr::distinct()
-  tmp3 <- tmp2 |>
-    dplyr::left_join(
-      gene_orfs_full, by = c("ORF" = "ORF2")) |>
-    dplyr::mutate(ORF2 = ORF) |>
-    dplyr::distinct()
 
   dataset_final <- data.frame()
   if(NROW(tmp0) > 0){
     dataset_final <-
       dplyr::bind_rows(
-        tmp0, tmp1, tmp3)
+        tmp0, tmp1, tmp2)
   }else{
     dataset_final <-
       dplyr::bind_rows(
-        tmp1, tmp3)
+        tmp1, tmp2)
   }
   dataset_final <-
    dataset_final |>
@@ -83,7 +82,6 @@ autophagy_competence_per_ko <- function(id, gw_autoph_data = NULL){
   #Get data for the mutant
   BF_response <- gw_autoph_data$BF_temporal |>
     dplyr::filter(primary_identifier == id)
-    #subset(gsub("NA ", "", paste(Gene, ORF)) == id)
 
     #If mutant in rec plate, only evaluate rec mutants
   if(any(grepl("Rec",BF_response$Plate))){
@@ -92,12 +90,9 @@ autophagy_competence_per_ko <- function(id, gw_autoph_data = NULL){
   #Find representative response
   BF_response <- BF_response |>
     dplyr::group_by(TimeR) |>
-    dplyr::mutate(d=abs(log_BFt_WT.ATG1_30-median(log_BFt_WT.ATG1_30))+
-             abs(log_BFt_WT.VAM6_30-median(log_BFt_WT.VAM6_30))+
-             abs(log_BFt_VAM6.ATG1_30-median(log_BFt_VAM6.ATG1_30))+
-             abs(log_BFt_WT.ATG1_22-median(log_BFt_WT.ATG1_22))+
-             abs(log_BFt_WT.VAM6_22-median(log_BFt_WT.VAM6_22))+
-             abs(log_BFt_VAM6.ATG1_22-median(log_BFt_VAM6.ATG1_22))) |>
+    dplyr::mutate(d=abs(log_BFt_WT.ATG1-median(log_BFt_WT.ATG1))+
+             abs(log_BFt_WT.VAM6 - median(log_BFt_WT.VAM6))+
+             abs(log_BFt_VAM6.ATG1 - median(log_BFt_VAM6.ATG1))) |>
     dplyr::group_by(Plate, Position) |>
     dplyr::mutate(d = mean(d), NCells = mean(NCells))
   BF_response <- BF_response[which(BF_response$d == min(BF_response$d)),]
@@ -121,25 +116,16 @@ autophagy_competence_per_ko <- function(id, gw_autoph_data = NULL){
   BF_response$shift <- Time.shift[as.character(BF_response$TimeR)]
   BF_response <- data.frame(BF_response)
   BF_response <- BF_response |>
-    dplyr::mutate(log_BFt_WT.ATG1_30.shift = (log_BFt_WT.ATG1_30[match(shift, TimeR)]-log_BFt_WT.ATG1_30)/3+log_BFt_WT.ATG1_30,
-           log_BFt_WT.VAM6_30.shift =  (log_BFt_WT.VAM6_30[match(shift, TimeR)]-log_BFt_WT.VAM6_30)/3 + log_BFt_WT.VAM6_30,
-           log_BFt_VAM6.ATG1_30.shift =  (log_BFt_VAM6.ATG1_30[match(shift, TimeR)]-log_BFt_VAM6.ATG1_30)/3 + log_BFt_VAM6.ATG1_30,
-           log_BFt_WT.ATG1_22.shift = (log_BFt_WT.ATG1_22[match(shift, TimeR)]-log_BFt_WT.ATG1_22)/3+log_BFt_WT.ATG1_22,
-           log_BFt_WT.VAM6_22.shift =  (log_BFt_WT.VAM6_22[match(shift, TimeR)]-log_BFt_WT.VAM6_22)/3 + log_BFt_WT.VAM6_22,
-           log_BFt_VAM6.ATG1_22.shift =  (log_BFt_VAM6.ATG1_22[match(shift, TimeR)]-log_BFt_VAM6.ATG1_22)/3 + log_BFt_VAM6.ATG1_22)
+    dplyr::mutate(log_BFt_WT.ATG1.shift = (log_BFt_WT.ATG1[match(shift, TimeR)]-log_BFt_WT.ATG1)/3+log_BFt_WT.ATG1,
+           log_BFt_WT.VAM6.shift =  (log_BFt_WT.VAM6[match(shift, TimeR)]-log_BFt_WT.VAM6)/3 + log_BFt_WT.VAM6,
+           log_BFt_VAM6.ATG1.shift =  (log_BFt_VAM6.ATG1[match(shift, TimeR)]-log_BFt_VAM6.ATG1)/3 + log_BFt_VAM6.ATG1)
   BF_response_ctr$shift <- Time.shift[as.character(BF_response_ctr$TimeR)]
   BF_response_ctr <- data.frame(BF_response_ctr)
   BF_response_ctr <- BF_response_ctr |>
-    dplyr::mutate(log_BFt_WT.ATG1_30.shift = (log_BFt_WT.ATG1_30[match(shift, TimeR)]-log_BFt_WT.ATG1_30)/3+log_BFt_WT.ATG1_30,
-           log_BFt_WT.VAM6_30.shift =  (log_BFt_WT.VAM6_30[match(shift, TimeR)]-log_BFt_WT.VAM6_30)/3 + log_BFt_WT.VAM6_30,
-           log_BFt_VAM6.ATG1_30.shift =  (log_BFt_VAM6.ATG1_30[match(shift, TimeR)]-log_BFt_VAM6.ATG1_30)/3 + log_BFt_VAM6.ATG1_30,
-           log_BFt_WT.ATG1_22.shift = (log_BFt_WT.ATG1_22[match(shift, TimeR)]-log_BFt_WT.ATG1_22)/3+log_BFt_WT.ATG1_22,
-           log_BFt_WT.VAM6_22.shift =  (log_BFt_WT.VAM6_22[match(shift, TimeR)]-log_BFt_WT.VAM6_22)/3 + log_BFt_WT.VAM6_22,
-           log_BFt_VAM6.ATG1_22.shift =  (log_BFt_VAM6.ATG1_22[match(shift, TimeR)]-log_BFt_VAM6.ATG1_22)/3 + log_BFt_VAM6.ATG1_22)
-
+    dplyr::mutate(log_BFt_WT.ATG1.shift = (log_BFt_WT.ATG1[match(shift, TimeR)]-log_BFt_WT.ATG1)/3+log_BFt_WT.ATG1,
+           log_BFt_WT.VAM6.shift =  (log_BFt_WT.VAM6[match(shift, TimeR)]-log_BFt_WT.VAM6)/3 + log_BFt_WT.VAM6,
+           log_BFt_VAM6.ATG1.shift =  (log_BFt_VAM6.ATG1[match(shift, TimeR)]-log_BFt_VAM6.ATG1)/3 + log_BFt_VAM6.ATG1)
   Library <- gw_autoph_data$dnn_preds[gw_autoph_data$dnn_preds$primary_identifier == id,]$Type[1]
-  #Library <- df_DNN_preds$Type[gsub("NA ", "",
-  #                                  paste(gw_autoph_data$df_DNN_preds$Gene, gw_autoph_data$df_DNN_preds$ORF)) == id][1]
 
   return(list(
     BF_response = BF_response,
@@ -150,17 +136,12 @@ autophagy_competence_per_ko <- function(id, gw_autoph_data = NULL){
 
 }
 
-#kinetic_response_per_ko
+## Prepare kinetic response data per gene mutant
 kinetic_response_per_ko <- function(
     id = "RTG3 / YBL103C", gw_autoph_data = NULL){
 
   y_pred <- gw_autoph_data$ds_curvefits |>
     dplyr::filter(primary_identifier == id)
-    #dplyr::mutate(
-    #  id_gene_orf = stringr::str_replace(
-    #    paste(.data$Gene, .data$ORF),"NA ","")) |>
-    #dplyr::filter(.data$id_gene_orf == id)
-
   ## if NROW(y_pred == 0)?
 
   #If mutant in rec plate, only evaluate rec mutants
@@ -179,8 +160,6 @@ kinetic_response_per_ko <- function(
     dplyr::mutate(d=mean(d))
   y_pred <- y_pred[which(y_pred$d==min(y_pred$d)),]
   y_raw <- gw_autoph_data$dnn_preds |>
-    #dplyr::filter(
-      #paste(Plate, Position) == paste(y_pred$Plate, y_pred$Position)[1])
     subset(paste(Plate, Position) %in% paste(y_pred$Plate, y_pred$Position)) |>
     dplyr::group_by(Plate, Position) |>
     dplyr::mutate(NCells = mean(NCells ))
@@ -188,22 +167,10 @@ kinetic_response_per_ko <- function(
   y_pred <- y_pred |>
     subset(paste(Plate, Position) %in% paste(y_raw$Plate, y_raw$Position))
 
-
-  # y_pred <- y_pred |>
-  #   dplyr::group_by(Time) |>
-  #   dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) |>
-  #   dplyr::group_by(Plate, Position) |>
-  #   dplyr::mutate(d=mean(d))
-  # y_pred <- y_pred[which(y_pred$d==min(y_pred$d)),]
-  # y_raw <- gw_autoph_data$dnn_preds |>
-  #   dplyr::filter(
-  #     paste(Plate, Position) == paste(y_pred$Plate, y_pred$Position)[1])
-
   slibrary <- ifelse(y_raw$Type== "KO" | !(is.na(y_raw$Plate_controls)),"KO","DAmP")[1]
   plate_id <- unique(y_raw$Plate)
   y_pred.ctr <- gw_autoph_data$ds_curvefits[
     which(is.na(gw_autoph_data$ds_curvefits$Plate_controls)),] |>
-    #subset(Type == Library) |>
     dplyr::filter(
       .data$Plate == plate_id) |>
     dplyr::group_by(.data$Time) |>
@@ -491,6 +458,8 @@ map_yeast_gene_identifiers <- function(
 
 }
 
+####--- Start preparing data ----####
+
 datestamp_genome_alliance <- "v7.4.0_2024-10-09"
 
 ## Read autophagy predictions
@@ -579,22 +548,99 @@ autophagy_preds[['ds_parms_comb']] <-
         "genename","alias_type","sgd_description")))
 
 
-#Read Bayes factor data
+## Read Bayes factor (BF) data - model specific (22 vs. 30)
 excel_file_bfactors <- file.path(
-  here::here(),"data-raw","Chica_et_al_Data_File_6_Autophagy_Bayes_factors.xlsx")
+   here::here(),"data-raw","Chica_et_al_Data_File_6_Autophagy_Bayes_factors.xlsx")
 
 bfactors_data <- list()
-bfactors_data[['overall']] <- readxl::read_excel(
-  excel_file_bfactors, sheet = 2)
+# bfactors_data[['overall']] <- readxl::read_excel(
+#   excel_file_bfactors, sheet = 2) |>
+#   dplyr::select(
+#     -c("P1_adj_30",
+#        "P1_adj_22",
+#        "P1_binary_adj_30",
+#        "P1_binary_adj_22",
+#        "Red","Green",
+#        "qGreen","qRed",
+#        "Red.late","Green.late",
+#        "GxR","GxR.late")
+# )
 bfactors_data[['starv']] <- readxl::read_excel(
   excel_file_bfactors, sheet = 3)
 bfactors_data[['repl']] <- readxl::read_excel(
-  excel_file_bfactors, sheet = 4)
-bfactors_data[['temporal']] <- readxl::read_excel(
-  excel_file_bfactors, sheet = 5)
+   excel_file_bfactors, sheet = 4)
+# bfactors_data[['temporal']] <- readxl::read_excel(
+#   excel_file_bfactors, sheet = 5)
 
 
-for(elem in c('overall','starv','repl','temporal')){
+## Read average BF model
+load(file.path(
+  here::here(), "data-raw",
+  "Bayes_factor_data_for_web_portal_averaged_20241206.RData"))
+
+bfactors_data[['overall']] <- as.data.frame(df_BF_average |>
+  dplyr::mutate(Plate_controls = dplyr::if_else(
+    nchar(Plate_controls) == 0,
+    as.character(NA),
+    Plate_controls
+  )) |>
+  dplyr::mutate(Gene = dplyr::if_else(
+    nchar(Gene) == 0,
+    as.character(NA),
+    Gene
+  )) |>
+  dplyr::mutate(Reference_sets = dplyr::if_else(
+    nchar(Reference_sets) == 0,
+    as.character(NA),
+    Reference_sets
+  )) |>
+  dplyr::select(-c("Red","Green","GxR","qRed","qGreen",
+                   "Red.late","Green.late","GxR.late",
+                   "P1_adj","P1_binary_adj"))
+)
+
+bfactors_data[['temporal']] <- as.data.frame(df_BF_TW_average |>
+  dplyr::mutate(Plate_controls = dplyr::if_else(
+    nchar(Plate_controls) == 0,
+    as.character(NA),
+    Plate_controls
+  )) |>
+  dplyr::mutate(Gene = dplyr::if_else(
+    nchar(Gene) == 0,
+    as.character(NA),
+    Gene
+  )) |>
+  dplyr::mutate(ORF = dplyr::if_else(
+    nchar(ORF) == 0,
+    as.character(NA),
+    ORF
+  ))
+)
+
+rownames(df_BF_average) <- NULL
+rownames(df_BF_TW_average) <- NULL
+#rm(df_BF_average, df_BF_TW_average)
+rownames(bfactors_data$temporal) <- NULL
+rownames(bfactors_data$overall) <- NULL
+
+#bfactors_data[['overall']] <- df_BF_average_overall
+#bfactors_data[['temporal']] <- df_BF_average_temporal
+
+## Append average model data to BF data
+# bfactors_data[['overall']] <- bfactors_data[['overall']] |>
+#   dplyr::left_join(df_BF_average_overall,
+#                    by = c("Gene","ORF","Position",
+#                           "Plate_controls","Plate",
+#                           "Reference_sets",
+#                           "NCells"))
+# bfactors_data[['temporal']] <- bfactors_data[['temporal']] |>
+#   dplyr::left_join(df_BF_average_temporal,
+#                    by = c("Gene","ORF","Position",
+#                           "Plate_controls","Plate",
+#                           "TimeR",
+#                           "NCells"))
+
+for(elem in c('overall','repl','temporal')){
   bfactors_data[[elem]] <- clean_internal_gene_orfs(
     dataset = bfactors_data[[elem]])
   bfactors_data[[elem]] <- map_yeast_gene_identifiers(
@@ -650,11 +696,7 @@ gw_autoph_data$ds_curvefits <- autophagy_preds[['ds_curvefits']]
 gw_autoph_data$dnn_preds <- autophagy_preds[['dnn']]
 gw_autoph_data$regr_df_all <- regr_df_all
 gw_autoph_data$BF_overall <- bfactors_data[['overall']]
-gw_autoph_data$BF_starv <- bfactors_data[['starv']]
-gw_autoph_data$BF_repl <- bfactors_data[['repl']]
 gw_autoph_data$BF_temporal <- bfactors_data[['temporal']]
-
-
 
 gw_autoph_kinetic_plot_input <- list()
 gw_autoph_competence_plot_input <- list()
@@ -786,30 +828,39 @@ autophagy_preds[['ds_curvefits']] <-
 
 
 saveRDS(gw_autoph_competence_plot_input, file.path(
-  here::here(), "data","processed","gw_autoph_competence_plot_input.rds"))
+  here::here(), "data","processed",
+  "gw_autoph_competence_plot_input.rds"))
 saveRDS(gw_autoph_kinetic_plot_input, file.path(
-  here::here(), "data","processed","gw_autoph_kinetic_plot_input.rds"))
+  here::here(), "data","processed",
+  "gw_autoph_kinetic_plot_input.rds"))
 fst::write_fst(
   autophagy_preds$dnn, file.path(
-    here::here(), "data","processed","dnn_preds.fst"))
+    here::here(), "data","processed",
+    "dnn_preds.fst"))
 fst::write_fst(
   autophagy_preds$ds_curvefits, file.path(
-    here::here(), "data","processed","ds_curvefits.fst"))
+    here::here(), "data","processed",
+    "ds_curvefits.fst"))
 fst::write_fst(
   autophagy_preds$ds_parms, file.path(
-    here::here(), "data","processed","ds_parms.fst"))
+    here::here(), "data","processed",
+    "ds_parms.fst"))
 fst::write_fst(
   autophagy_preds$ds_parms_ctrs, file.path(
-    here::here(), "data","processed","ds_parms_ctrs.fst"))
+    here::here(), "data","processed",
+    "ds_parms_ctrs.fst"))
 fst::write_fst(
   gw_autoph_data$regr_df_all, file.path(
-    here::here(), "data","processed","regr_df_all.fst"))
+    here::here(), "data","processed",
+    "regr_df_all.fst"))
 fst::write_fst(
   gene_info_kinetic, file.path(
-    here::here(), "data","processed","gene_info_kinetic.fst"))
+    here::here(), "data","processed",
+    "gene_info_kinetic.fst"))
 fst::write_fst(
   gene_info_kinetic_multi, file.path(
-    here::here(), "data","processed","gene_info_kinetic_multi.fst"))
+    here::here(), "data","processed",
+    "gene_info_kinetic_multi.fst"))
 
 
 fst::write_fst(
@@ -818,12 +869,6 @@ fst::write_fst(
 fst::write_fst(
   gw_autoph_data$BF_overall, file.path(
     here::here(), "data","processed","BF_overall.fst"))
-fst::write_fst(
-  gw_autoph_data$BF_starv, file.path(
-    here::here(), "data","processed","BF_starv.fst"))
-fst::write_fst(
-  gw_autoph_data$BF_starv, file.path(
-    here::here(), "data","processed","BF_repl.fst"))
 fst::write_fst(
   gw_autoph_data$BF_temporal, file.path(
     here::here(), "data","processed","BF_temporal.fst"))

@@ -107,82 +107,55 @@ load_autophagy_competence_data <- function(){
 plot_autophagy_competence_multi <- function(
     competence_data = NULL,
     primary_identifiers = NULL,
-    dnn_model = "30",
+    #dnn_model = "30",
     library_adjustment = FALSE,
     show_library_type_contour = FALSE,
     user_x = "Autophagosome formation",
     user_y = "Autophagosome clearance"){
 
-  #Select x and y
-  variables <- colnames(
-    competence_data[['bf_overall']])[5:16]
 
+  variables <- colnames(
+    competence_data[['bf_overall']])[5:7]
+
+  #Select x and y
   X <- variables[1]
   Y <- variables[1]
-  if(dnn_model == "30"){
-    if(user_x == "Autophagosome formation"){
-      X <- variables[3]
-    }
-    if(user_x == "Autophagosome clearance"){
-      X <- variables[2]
-    }
-    if(user_y == "Autophagosome formation"){
-      Y <- variables[3]
-    }
-    if(user_y == "Autophagosome clearance"){
-      Y <- variables[2]
-    }
-  }
 
-  if(dnn_model == "22"){
-    if(user_x == "Autophagosome clearance"){
-      X <- variables[5]
-    }
-    if(user_x == "Autophagosome formation"){
-      X <- variables[6]
-    }
-    if(user_x == "Overall autophagy"){
-      X <- variables[4]
-    }
-    if(user_y == "Autophagosome clearance"){
-      Y <- variables[5]
-    }
-    if(user_y == "Autophagosome formation"){
-      Y <- variables[6]
-    }
-    if(user_y == "Overall autophagy"){
-      Y <- variables[4]
-    }
+  if(user_x == "Autophagosome formation"){
+    X <- variables[3]
+  }
+  if(user_y == "Autophagosome formation"){
+    Y <- variables[3]
+  }
+  if(user_x == "Autophagosome clearance"){
+    X <- variables[2]
+  }
+  if(user_y == "Autophagosome clearance"){
+    Y <- variables[2]
   }
 
   lab_x <- ""
   lab_y <- ""
   if(grepl("VAM6.ATG1", X, fixed = T)){
     lab_x <- paste0("<br><b>Autophagosome formation</b><br><br>",
-                    "<i>log BF (VAM6:ATG1) - DNN model '",
-                    dnn_model,"'</i>")
+                    "<i>log BF (VAM6:ATG1)</i>")
   }else if(grepl("WT.ATG1", X, fixed = T)){
     lab_x <- paste0("<br><b>Overall autophagy</b><br><br>",
-                    "<i>log BF (WT:ATG1) - DNN model '",
-                    dnn_model,"'</i>")
+                    "<i>log BF (WT:ATG1)</i>")
   }else{
     lab_x <- paste0("<br><b>Autophagosome clearance</b><br><br>",
-                    "<i>log BF (WT:VAM6) - DNN model '",
-                    dnn_model,"'</i>")
+                    "<i>log BF (WT:VAM6)</i>")
   }
   if(grepl("VAM6.ATG1", Y, fixed = T)){
     lab_y <- paste0("<b>Autophagosome formation</b><br><br>",
-                    "<i>log BF (VAM6:ATG1) - DNN model '",
-                    dnn_model,"'</i><br>")
+                    "<i>log BF (VAM6:ATG1)</i><br>")
 
   }else if(grepl("WT.ATG1", Y, fixed = T)){
     lab_y <- paste0("<b>Overall autophagy</b><br><br>",
-                    "<i>log BF (WT:ATG1) - DNN model '",
-                    dnn_model,"'</i><br>")
+                    "<i>log BF (WT:ATG1)</i><br>")
   }else{
     lab_y <- paste0("<b>Autophagosome clearance</b><br><br>",
-                    "<i>log BF (WT:VAM6) - DNN model '",
-                    dnn_model,"'</i><br>")
+                    "<i>log BF (WT:VAM6)</i><br>")
   }
 
   Positions <- c()
@@ -197,12 +170,9 @@ plot_autophagy_competence_multi <- function(
     #Find representative response
     BF_response <- BF_response |>
       dplyr::group_by(TimeR) |>
-      dplyr::mutate(d=abs(log_BFt_WT.ATG1_30-median(log_BFt_WT.ATG1_30))+
-               abs(log_BFt_WT.VAM6_30-median(log_BFt_WT.VAM6_30))+
-               abs(log_BFt_VAM6.ATG1_30-median(log_BFt_VAM6.ATG1_30))+
-               abs(log_BFt_WT.ATG1_22-median(log_BFt_WT.ATG1_22))+
-               abs(log_BFt_WT.VAM6_22-median(log_BFt_WT.VAM6_22))+
-               abs(log_BFt_VAM6.ATG1_22-median(log_BFt_VAM6.ATG1_22))) |>
+      dplyr::mutate(d=abs(log_BFt_WT.ATG1-median(log_BFt_WT.ATG1))+
+               abs(log_BFt_WT.VAM6-median(log_BFt_WT.VAM6))+
+               abs(log_BFt_VAM6.ATG1-median(log_BFt_VAM6.ATG1))) |>
       dplyr::group_by(Plate, Position) |>
       dplyr::mutate(
         d = mean(d),
@@ -335,206 +305,119 @@ plot_autophagy_competence_multi <- function(
 
   return(p)
 
-  # ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
-  #   ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
-  #   ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
-  #                   ggplot2::aes(), col="grey30", alpha=1) +
-  #   ggplot2::stat_density_2d(
-  #     data=mat[which(mat$Plate_controls=="+"),] |>
-  #       dplyr::mutate(Gene = ifelse(is.na(Gene), "WT", Gene)),
-  #     ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..), geom = "polygon", col=NA) +
-  #   ggplot2::geom_point(
-  #     data=mat[which(!is.na(mat$Reference_sets) &
-  #                      !grepl("ORF",mat$Reference_sets)),],
-  #     ggplot2::aes(col=Reference_sets), size=1) +
-  #   ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
-  #   geom_text_repel(data=mat_select,aes(label=Gene),
-  #                   force=2, size=4.2,
-  #                   max.overlaps = Inf,
-  #                   min.segment.length = 0,
-  #                   segment.size = 0.3) +
-  #   ggplot2::labs(x=gsub("\\.",":",
-  #               gsub("_"," ",X)),
-  #        y=gsub("\\.",":",gsub("_"," ",Y)),
-  #        color="Reference sets",
-  #        linetype="Library") +
-  #   ggsci::scale_fill_jama() +
-  #   ggsci::scale_color_d3() +
-  #   ggplot2::scale_linetype_manual(values=c(2,1)) +
-  #   ggplot2::theme_bw() +
-  #   ggplot2::theme(axis.title = ggplot2::element_text(size=16),
-  #                  axis.text = ggplot2::element_text(size=16),
-  #                  panel.grid.major = element_blank(),
-  #                  panel.grid.minor = element_blank()) +
-  #   guides(alpha = FALSE)
-  #
-  # ggplot(mat[is.na(mat$Plate_controls),], aes(X, Y)) +
-  #   ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
-  #   ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
-  #                   ggplot2::aes(), col="grey30", alpha=1) +
-  #   ggplot2::stat_density_2d(data=mat[!is.na(mat$Plate_controls) &
-  #                                       !is.na(mat$Gene) & mat$Gene != "WT",],
-  #                   ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
-  #                   geom = "polygon", col=NA) +
-  #   ggplot2::geom_point(data=mat[which(!is.na(mat$Reference_sets) &
-  #                                        !grepl("ORF",mat$Reference_sets)),],
-  #              ggplot2::aes(col=Reference_sets), size=1) +
-  #   ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
-  #   ggrepel::geom_text_repel(data=mat_select, ggplot2::aes(label=Gene),
-  #                   force=2, size=4.2,
-  #                   max.overlaps = Inf,
-  #                   min.segment.length = 0,
-  #                   segment.size = 0.3) +
-  #   ggplot2::labs(
-  #     x=gsub("\\.",":",gsub("_"," ",X)),
-  #     y=gsub("\\.",":",gsub("_"," ",Y)),
-  #     color="Reference sets") +
-  #   ggsci::scale_fill_jama() +
-  #   ggsci::scale_color_d3() +
-  #   ggplot2::theme_bw() +
-  #   ggplot2::theme(panel.grid.major = element_blank(),
-  #                  panel.grid.minor = element_blank()) +
-  #   guides(alpha = FALSE)
-  #
-  # ggplot2::ggplot(mat[is.na(mat$Plate_controls),], ggplot2::aes(X, Y)) +
-  #   ggplot2::geom_point(col="lightgray", size=0.7, pch=16, alpha=0.8) +
-  #   ggplot2::stat_density_2d(data=mat[is.na(mat$Plate_controls),],
-  #                   ggplot2::aes(lty=Type), col="grey30", alpha=1) +
-  #   ggplot2::stat_density_2d(data=mat[which(mat$Plate_controls=="+"),] |>
-  #                              dplyr::mutate(Gene = ifelse(is.na(Gene), "WT", Gene)),
-  #                   ggplot2::aes(fill=Gene, group=Gene, alpha = ..level..),
-  #                   geom = "polygon", col=NA) +
-  #   ggplot2::geom_point(data=mat[which(!is.na(mat$Reference_sets) &
-  #                                        !grepl("ORF",mat$Reference_sets)),],
-  #              ggplot2::aes(col=Reference_sets), size=1) +
-  #   ggplot2::geom_point(data=mat_select, ggplot2::aes(), pch=21) +
-  #   ggrepel::geom_text_repel(data=mat_select,aes(label=Gene),
-  #                   force=2, size=4.2,
-  #                   max.overlaps = Inf,
-  #                   min.segment.length = 0,
-  #                   segment.size = 0.3) +
-  #   ggplot2::labs(
-  #     x=gsub("\\.",":",gsub("_"," ",X)),
-  #     y=gsub("\\.",":",gsub("_"," ",Y)),
-  #     color="Reference sets", linetype="Library") +
-  #   ggsci::scale_fill_jama() +
-  #   ggsci::scale_color_d3() +
-  #   ggplot2::scale_linetype_manual(values=c(2,1)) +
-  #   ggplot2::theme_bw() +
-  #   ggplot2::theme(
-  #     axis.title = ggplot2::element_text(size=16),
-  #     axis.text = ggplot2::element_text(size=16),
-  #     legend.text = ggplot2::element_text(size=14),
-  #     legend.title = ggplot2::element_text(size=16),
-  #     panel.grid.major = element_blank(),
-  #     panel.grid.minor = element_blank()) +
-  #   ggplot2::guides(alpha = FALSE)
-
-
-
 }
 
 
-plot_autophagy_competence <- function(competence_data = NULL,
-                                      dnn_model = "30"){
+plot_autophagy_competence <- function(competence_data = NULL){
 
   p <- NULL
 
   x_lab <-
     paste0("<br><b>Autophagosome formation</b><br><br>",
-           "<i>log BFt (VAM6:ATG1), DNN-model '",
-           dnn_model,"'</i>")
+           "<i>log BFt (VAM6:ATG1)")
   y_lab <-
     paste0("<b>Autophagosome clearance</b><br><br>",
-           "<i>log BFt (WT:VAM6), DNN-model '",
-           dnn_model,"'</i><br>")
+           "<i>log BFt (WT:VAM6)</i><br>")
+  # x_lab <-
+  #   paste0("<br><b>Autophagosome formation</b><br><br>",
+  #          "<i>log BFt (VAM6:ATG1), DNN-model '",
+  #          dnn_model,"'</i>")
+  # y_lab <-
+  #   paste0("<b>Autophagosome clearance</b><br><br>",
+  #          "<i>log BFt (WT:VAM6), DNN-model '",
+  #          dnn_model,"'</i><br>")
 
-  if(dnn_model == "30"){
-    p <- ggplot2::ggplot(
-      competence_data$BF_response,
+  #if(dnn_model == "30"){
+  p <- ggplot2::ggplot(
+    competence_data$BF_response,
+    ggplot2::aes(
+      log_BFt_VAM6.ATG1,
+      log_BFt_WT.VAM6, col=TimeR)) +
+    ggplot2::geom_vline(xintercept = 0, lty=1, col="black", size=0.1) +
+    ggplot2::geom_hline(yintercept = 0, lty=1, col="black", size=0.1) +
+    scico::scale_color_scico(palette = 'lisbon') +
+    ggplot2::scale_size(range = c(0, 1.5)) +
+    #geom_path(data=BF_response_ctr, aes(),col="gray",lty=2, alpha = 1) +
+    ggplot2::geom_point(
+      data=competence_data$BF_response_ctr,
       ggplot2::aes(
-        log_BFt_VAM6.ATG1_30,
-        log_BFt_WT.VAM6_30, col=TimeR)) +
-      ggplot2::geom_vline(xintercept = 0, lty=1, col="black", size=0.1) +
-      ggplot2::geom_hline(yintercept = 0, lty=1, col="black", size=0.1) +
-      scico::scale_color_scico(palette = 'lisbon') +
-      ggplot2::scale_size(range = c(0, 1.5)) +
-      #geom_path(data=BF_response_ctr, aes(),col="gray",lty=2, alpha = 1) +
-      ggplot2::geom_point(
-        data=competence_data$BF_response_ctr,
-        ggplot2::aes(
-          size=log_BFt_WT.ATG1_30, pch="Control"),size=1.8, alpha = 1) +
-      ggplot2::geom_path(ggplot2::aes(),col="black",lty=2, alpha = 1) +
-      ggplot2::geom_segment(ggplot2::aes(
-        xend = log_BFt_VAM6.ATG1_30.shift,
-        yend = log_BFt_WT.VAM6_30.shift,
-        size=log_BFt_WT.ATG1_30),
-        arrow = arrow(
-          angle = 35,
-          length = unit(0.11, "inches"),
-          type = "closed"),
-        alpha = 1,
-        size=1.3) +
-      ggplot2::labs(
-        x = x_lab,
-        y = y_lab,
-        col="Time", size="BF (WT:ATG1)",
-        title=paste(competence_data$id, competence_data$Library), shape="") +
-      ggplot2::theme_bw(base_size = 20, base_family = "Helvetica") +
-      ggplot2::theme(
-        panel.grid.major = ggplot2::element_blank(),
-        panel.grid.minor = ggplot2::element_blank(),
-        plot.title = ggplot2::element_text(size=20, face="bold"),
-        axis.text = ggplot2::element_text(size=18),
-        plot.margin = ggplot2::margin(2, 1, 1, 1, "cm"),
-        axis.title.y = ggtext::element_markdown(size = 18),
-        axis.title.x = ggtext::element_markdown(size = 18),
-        legend.text = ggplot2::element_text(size=18, family = "Helvetica"),
-        strip.background = ggplot2::element_blank(),
-        legend.position = "top")
-  }else{
-    p <- ggplot2::ggplot(
-      competence_data$BF_response,
-      ggplot2::aes(log_BFt_VAM6.ATG1_22,
-                   log_BFt_WT.VAM6_22,
-                   col=TimeR)) +
-      ggplot2::geom_vline(
-        xintercept = 0, lty=1, col="black", size=0.1) +
-      ggplot2::geom_hline(
-        yintercept = 0, lty=1, col="black", size=0.1) +
-      scico::scale_color_scico(palette = 'lisbon') +
-      ggplot2::scale_size(range = c(0, 1.5)) +
-      ggplot2::geom_point(
-        data=competence_data$BF_response_ctr,
-        ggplot2::aes(size=log_BFt_WT.ATG1_22, pch="Control"),size=1.8, alpha = 1) +
-      ggplot2::geom_path(ggplot2::aes(),col="black",lty=2, alpha = 1) +
-      ggplot2::geom_segment(ggplot2::aes(
-        xend = log_BFt_VAM6.ATG1_22.shift,
-        yend = log_BFt_WT.VAM6_22.shift,
-        size=log_BFt_WT.ATG1_22),
-        arrow = arrow(
-          angle = 35,
-          length = unit(0.11, "inches"),
-          type = "closed"),
-        alpha = 1, size=1.3) +
-      ggplot2::labs(
-        x = x_lab,
-        y = y_lab,
-        col = "Time",
-        size = "BF (WT:ATG1)",
-        title=paste(competence_data$id, competence_data$Library), shape="") +
-      ggplot2::theme_bw(base_size = 20, base_family = "Helvetica") +
-      ggplot2::theme(
-        panel.grid.major = ggplot2::element_blank(),
-        panel.grid.minor = ggplot2::element_blank(),
-        plot.title = ggplot2::element_text(size=20, face="bold"),
-        axis.text = ggplot2::element_text(size=18),
-        plot.margin = ggplot2::margin(2, 1, 1, 1, "cm"),
-        axis.title.y = ggtext::element_markdown(size = 18),
-        axis.title.x = ggtext::element_markdown(size = 18),
-        legend.text = ggplot2::element_text(size=18),
-        legend.position = "top")
-  }
+        size=log_BFt_WT.ATG1, pch="Control"),size=1.8, alpha = 1) +
+    ggplot2::geom_path(ggplot2::aes(),col="black",lty=2, alpha = 1) +
+    ggplot2::geom_segment(ggplot2::aes(
+      xend = log_BFt_VAM6.ATG1.shift,
+      yend = log_BFt_WT.VAM6.shift,
+      size=log_BFt_WT.ATG1),
+      arrow = arrow(
+        angle = 35,
+        length = unit(0.11, "inches"),
+        type = "closed"),
+      alpha = 1,
+      size=1.3) +
+    ggplot2::labs(
+      x = x_lab,
+      y = y_lab,
+      col="Time",
+      size="BF (WT:ATG1)",
+      #title=paste(competence_data$id, competence_data$Library),
+      shape="") +
+    ggplot2::theme_bw(base_size = 20, base_family = "Helvetica") +
+    ggplot2::theme(
+      panel.grid.major = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.title = ggplot2::element_blank(),
+      #plot.title = ggplot2::element_text(size=20, face="bold"),
+      axis.text = ggplot2::element_text(size=18),
+      plot.margin = ggplot2::margin(2, 1, 1, 1, "cm"),
+      axis.title.y = ggtext::element_markdown(size = 18),
+      axis.title.x = ggtext::element_markdown(size = 18),
+      legend.text = ggplot2::element_text(size=18, family = "Helvetica"),
+      strip.background = ggplot2::element_blank(),
+      legend.position = "right")
+  # }else{
+  #   p <- ggplot2::ggplot(
+  #     competence_data$BF_response,
+  #     ggplot2::aes(log_BFt_VAM6.ATG1_22,
+  #                  log_BFt_WT.VAM6_22,
+  #                  col=TimeR)) +
+  #     ggplot2::geom_vline(
+  #       xintercept = 0, lty=1, col="black", size=0.1) +
+  #     ggplot2::geom_hline(
+  #       yintercept = 0, lty=1, col="black", size=0.1) +
+  #     scico::scale_color_scico(palette = 'lisbon') +
+  #     ggplot2::scale_size(range = c(0, 1.5)) +
+  #     ggplot2::geom_point(
+  #       data=competence_data$BF_response_ctr,
+  #       ggplot2::aes(size=log_BFt_WT.ATG1_22, pch="Control"),size=1.8, alpha = 1) +
+  #     ggplot2::geom_path(ggplot2::aes(),col="black",lty=2, alpha = 1) +
+  #     ggplot2::geom_segment(ggplot2::aes(
+  #       xend = log_BFt_VAM6.ATG1_22.shift,
+  #       yend = log_BFt_WT.VAM6_22.shift,
+  #       size=log_BFt_WT.ATG1_22),
+  #       arrow = arrow(
+  #         angle = 35,
+  #         length = unit(0.11, "inches"),
+  #         type = "closed"),
+  #       alpha = 1, size=1.3) +
+  #     ggplot2::labs(
+  #       x = x_lab,
+  #       y = y_lab,
+  #       col = "Time",
+  #       size = "BF (WT:ATG1)",
+  #       #title=paste(competence_data$id, competence_data$Library),
+  #       shape="") +
+  #     ggplot2::theme_bw(base_size = 20, base_family = "Helvetica") +
+  #     ggplot2::theme(
+  #       panel.grid.major = ggplot2::element_blank(),
+  #       panel.grid.minor = ggplot2::element_blank(),
+  #       plot.title = ggplot2::element_blank(),
+  #       #plot.title = ggplot2::element_text(size=20, face="bold"),
+  #       axis.text = ggplot2::element_text(size=18),
+  #       plot.margin = ggplot2::margin(2, 1, 1, 1, "cm"),
+  #       axis.title.y = ggtext::element_markdown(size = 18),
+  #       axis.title.x = ggtext::element_markdown(size = 18),
+  #       legend.text = ggplot2::element_text(size=18),
+  #       legend.position = "right")
+  # }
   return(p)
 
 
@@ -837,7 +720,10 @@ plot_response_kinetics <- function(response_data = NULL){
         y_raw$TimeR,y_raw$TimeR+12),y_raw$P1_30, col="Data")) +
     ggplot2::ylim(0,100) +
     ggplot2::xlim(-1,20) +
-    ggplot2::labs(x="Time (hours)", y="Autophagy (%)", title=paste(id, slibrary)) +
+    ggplot2::labs(
+      x="Time (hours)",
+      y="Autophagy (%)") +
+      #title=paste(id, slibrary)) +
     ggplot2::scale_color_manual(
       values=ggsci::pal_jco("default", alpha = 1)(7)[c(7,1,4)]) +
     ggplot2::theme_bw(base_size = 18, base_family = "Helvetica") +
