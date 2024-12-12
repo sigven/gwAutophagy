@@ -1,4 +1,4 @@
-## Script to prepare data,
+## Script to prepare data for the AutoDRY Shiny app,
 ## utilize https://www.fstpackage.org/ for faster read/write
 
 my_log4r_layout <- function(level, ...) {
@@ -19,16 +19,16 @@ clean_internal_gene_orfs <- function(dataset = NULL){
   dataset <- dataset |>
     dplyr::mutate(record_idx = dplyr::row_number())
 
-  ## Only Gene is present (ORF is missing) - WT
+  ## Case 0: Only Gene is present (ORF is missing) - WT
   tmp0 <- dataset |>
     dplyr::filter(is.na(ORF) & !is.na(Gene))
 
-  ## Both Gene and ORF are present - confident entry
+  ## Case 1: Both Gene and ORF are present - confident entry
   tmp1 <- dataset |>
     dplyr::filter(!is.na(ORF) & !is.na(Gene)) |>
     dplyr::mutate(Gene2 = Gene, ORF2 = ORF)
 
-  ## Only ORF is present - Gene is missing)
+  ## Case 2: Only ORF is present - Gene is missing)
   ## - here, we exclude records for which records with the same ORF
   ##  (and Gene) are part of tmp1 dataset; some 44 ORFs carry this property
   ##   Rationale: ORF is a unique identifier, users will likely get confused
@@ -152,7 +152,6 @@ kinetic_response_per_ko <- function(
   #else what?
 
   #Find representative response
-
   y_pred <- y_pred |>
     dplyr::group_by(Time) |>
     dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) |>
@@ -462,7 +461,8 @@ map_yeast_gene_identifiers <- function(
 
 datestamp_genome_alliance <- "v7.4.0_2024-10-09"
 
-## Read autophagy predictions
+####--- 1. Read autophagy predictions ---####
+
 excel_file_autophagy_predictions <- file.path(
   here::here(),"data-raw",
   "Chica_et_al_Data_File_S2_Autophagy_predictions_Statistics_Clustering.xlsx")
@@ -525,7 +525,7 @@ gene_info_kinetic <-
   )) |>
   dplyr::distinct()
 
-## identify gene/ORFs with missing data
+####---- 2. Identify gene/ORFs with missing/limited data----#####
 missing_multi <-
   autophagy_preds$ds_parms_comb |>
   dplyr::select(primary_identifier, Parameter) |>
@@ -545,35 +545,22 @@ autophagy_preds[['ds_parms_comb']] <-
   dplyr::select(
     -dplyr::any_of(
       c("sgd_id","entrezgene",
-        "genename","alias_type","sgd_description")))
+        "genename","alias_type",
+        "sgd_description")))
 
 
 ## Read Bayes factor (BF) data - model specific (22 vs. 30)
 excel_file_bfactors <- file.path(
-   here::here(),"data-raw","Chica_et_al_Data_File_6_Autophagy_Bayes_factors.xlsx")
+   here::here(),"data-raw",
+   "Chica_et_al_Data_File_6_Autophagy_Bayes_factors.xlsx")
 
 bfactors_data <- list()
-# bfactors_data[['overall']] <- readxl::read_excel(
-#   excel_file_bfactors, sheet = 2) |>
-#   dplyr::select(
-#     -c("P1_adj_30",
-#        "P1_adj_22",
-#        "P1_binary_adj_30",
-#        "P1_binary_adj_22",
-#        "Red","Green",
-#        "qGreen","qRed",
-#        "Red.late","Green.late",
-#        "GxR","GxR.late")
-# )
 bfactors_data[['starv']] <- readxl::read_excel(
   excel_file_bfactors, sheet = 3)
 bfactors_data[['repl']] <- readxl::read_excel(
    excel_file_bfactors, sheet = 4)
-# bfactors_data[['temporal']] <- readxl::read_excel(
-#   excel_file_bfactors, sheet = 5)
 
-
-## Read average BF model
+####---- 3. Read average BF model data----#####
 load(file.path(
   here::here(), "data-raw",
   "Bayes_factor_data_for_web_portal_averaged_20241206.RData"))
@@ -617,28 +604,8 @@ bfactors_data[['temporal']] <- as.data.frame(df_BF_TW_average |>
   ))
 )
 
-rownames(df_BF_average) <- NULL
-rownames(df_BF_TW_average) <- NULL
-#rm(df_BF_average, df_BF_TW_average)
 rownames(bfactors_data$temporal) <- NULL
 rownames(bfactors_data$overall) <- NULL
-
-#bfactors_data[['overall']] <- df_BF_average_overall
-#bfactors_data[['temporal']] <- df_BF_average_temporal
-
-## Append average model data to BF data
-# bfactors_data[['overall']] <- bfactors_data[['overall']] |>
-#   dplyr::left_join(df_BF_average_overall,
-#                    by = c("Gene","ORF","Position",
-#                           "Plate_controls","Plate",
-#                           "Reference_sets",
-#                           "NCells"))
-# bfactors_data[['temporal']] <- bfactors_data[['temporal']] |>
-#   dplyr::left_join(df_BF_average_temporal,
-#                    by = c("Gene","ORF","Position",
-#                           "Plate_controls","Plate",
-#                           "TimeR",
-#                           "NCells"))
 
 for(elem in c('overall','repl','temporal')){
   bfactors_data[[elem]] <- clean_internal_gene_orfs(
@@ -683,14 +650,16 @@ regr_df_all <- data.frame()
 for(n in names(regression.results)){
   if(is.data.frame(regression.results[[n]])){
     regr_df <- as.data.frame(regression.results[[n]]) |>
-      dplyr::mutate(id = n, id2 = stringr::str_replace_all(n," ","")) |>
-      dplyr::select(c("id", "id2", dplyr::everything()))
+      dplyr::mutate(
+        id = n, id2 = stringr::str_replace_all(n," ","")) |>
+      dplyr::select(
+        c("id", "id2", dplyr::everything()))
 
     regr_df_all <- dplyr::bind_rows(regr_df_all, regr_df)
   }
 }
 
-
+####---- 4. Prepare mutant-specific data for plots----#####
 gw_autoph_data <- list()
 gw_autoph_data$ds_curvefits <- autophagy_preds[['ds_curvefits']]
 gw_autoph_data$dnn_preds <- autophagy_preds[['dnn']]
@@ -701,17 +670,21 @@ gw_autoph_data$BF_temporal <- bfactors_data[['temporal']]
 gw_autoph_kinetic_plot_input <- list()
 gw_autoph_competence_plot_input <- list()
 
+## Loop through all gene identifiers and prepare input data for plots
+## A) Kinetic response
 i <- 1
 for(id in unique(gene_info_kinetic$orf_gene_id)){
   gw_autoph_kinetic_plot_input[[id]] <-
     kinetic_response_per_ko(id = id, gw_autoph_data = gw_autoph_data)
   if(i %% 100 == 0){
     log4r::info(log4r_logger, msg = paste0(
-      "Preparing kinetic plot input - processed ",i, " gene identifiers.. "))
+      "Preparing kinetic plot input - processed ",
+      i, " gene identifiers.. "))
   }
   i <- i + 1
 }
 
+## B) Autophagy competence (BF)
 i <- 1
 for(id in unique(gene_info_bf$orf_gene_id)){
   gw_autoph_competence_plot_input[[id]] <-
@@ -719,13 +692,16 @@ for(id in unique(gene_info_bf$orf_gene_id)){
       id = id, gw_autoph_data = gw_autoph_data)
   if(i %% 100 == 0){
     log4r::info(log4r_logger, msg = paste0(
-      "Preparing autophagy competence plot input - processed ",i, " gene identifiers.. "))
+      "Preparing autophagy competence plot input - processed ",
+      i, " gene identifiers.. "))
   }
   i <- i + 1
 }
 
+####---- 5. Gather gene information for plots----#####
 ortholog_links <- readRDS(
-  file="data-raw/yeast_ortholog_map.rds") |>
+  file = file.path(
+    here::here(), "data-raw", "yeast_ortholog_map.rds")) |>
   tidyr::separate(
     value, c("entrez_human","symbol",
              "orthology_support","orthology_match",
@@ -789,7 +765,7 @@ gene_info_bf <- gene_info_bf |>
   dplyr::mutate(sgd_description = stringr::str_replace_all(
     sgd_description,"\\. Orthologous to .+\\.$","."))
 
-
+## change name of parameters
 for(elem in c('ds_parms','ds_parms_ctrs')){
   if(!is.null(autophagy_preds[[elem]])){
     autophagy_preds[[elem]]$Parameter <-
@@ -827,6 +803,10 @@ autophagy_preds[['ds_curvefits']] <-
     by = c("primary_identifier"))
 
 
+####---- 6. Save processed data ----####
+
+## - These data files will be loaded initially in the
+##   shiny app to improve response time of plots etc.
 saveRDS(gw_autoph_competence_plot_input, file.path(
   here::here(), "data","processed",
   "gw_autoph_competence_plot_input.rds"))

@@ -107,7 +107,6 @@ load_autophagy_competence_data <- function(){
 plot_autophagy_competence_multi <- function(
     competence_data = NULL,
     primary_identifiers = NULL,
-    #dnn_model = "30",
     library_adjustment = FALSE,
     show_library_type_contour = FALSE,
     user_x = "Autophagosome formation",
@@ -162,7 +161,6 @@ plot_autophagy_competence_multi <- function(
   for(i in primary_identifiers){
     BF_response <- competence_data[['bf_temporal']] |>
       dplyr::filter(primary_identifier == i)
-      #subset(gsub("NA ", "", paste(Gene, ORF)) == i)
     #If mutant in rec plate, only evaluate rec mutants
     if(any(grepl("Rec",BF_response$Plate))){
       BF_response <- BF_response[which(grepl("Rec",BF_response$Plate)),]
@@ -177,9 +175,12 @@ plot_autophagy_competence_multi <- function(
       dplyr::mutate(
         d = mean(d),
         NCells = mean(NCells))
-    BF_response <- BF_response[which(BF_response$d==min(BF_response$d)),]
-    BF_response <- BF_response[which(BF_response$NCells==max(BF_response$NCells)),]
-    Positions <- c(Positions,paste(BF_response$Plate, BF_response$Position)[1])
+    BF_response <-
+      BF_response[which(BF_response$d==min(BF_response$d)),]
+    BF_response <-
+      BF_response[which(BF_response$NCells==max(BF_response$NCells)),]
+    Positions <-
+      c(Positions,paste(BF_response$Plate, BF_response$Position)[1])
   }
 
 
@@ -194,12 +195,12 @@ plot_autophagy_competence_multi <- function(
       competence_data[['dnn_preds']]$Gene,
       competence_data[['dnn_preds']]$ORF))]
 
-  # mat$Type <-
-  #   factor(mat$Type, levels = c("KO", "DAmP"),
-  #          ordered = T)
-  # mat <- mat |> dplyr::arrange(Type)
-
   if(library_adjustment == TRUE){
+    ## 1) We standardize the distributions of KO, DAmP and WT populations
+    ##    to have equal mean and variance.
+    ## 2) We cannot assume that the variance is the same for WT and
+    ##    mutant distributions so we ensure that the sd is unchanged.
+
     mat_lib <- mat[is.na(mat$Plate_controls),] |>
       dplyr::mutate(
         mean_x = mean(!!rlang::sym(X), na.rm = T),
@@ -238,14 +239,20 @@ plot_autophagy_competence_multi <- function(
         mean_y = mean(mean_y, na.rm = T),
         sd_x = mean(sd_x, na.rm = T),
         sd_y = mean(sd_y, na.rm = T))
+    #set global target distribution mean and SD for WT
     mat_wt[,6:9] <- mat_lib[1,6:9]
+    #keep SD unchanged for the WT, i.e. only change mean
     mat_wt[1,4:5] <- mat_wt[1,8:9]
     mat_lib <- rbind(mat_lib, mat_wt)
 
-    mat[,X] <-  mat[,X] + (mat_lib$mean_x-mat_lib$mean_type_x)[match(mat$Type,mat_lib$Type)]
-    mat[,Y] <- mat[,Y] + (mat_lib$mean_y-mat_lib$mean_type_y)[match(mat$Type,mat_lib$Type)]
-    mat[,X] <- mat[,X] *((mat_lib$sd_x/mat_lib$sd_type_x)[match(mat$Type,mat_lib$Type)])
-    mat[,Y] <- mat[,Y] *((mat_lib$sd_y/mat_lib$sd_type_y)[match(mat$Type,mat_lib$Type)])
+    mat[,X] <-  mat[,X] +
+      (mat_lib$mean_x-mat_lib$mean_type_x)[match(mat$Type,mat_lib$Type)]
+    mat[,Y] <- mat[,Y] +
+      (mat_lib$mean_y-mat_lib$mean_type_y)[match(mat$Type,mat_lib$Type)]
+    mat[,X] <- mat[,X] *
+      ((mat_lib$sd_x/mat_lib$sd_type_x)[match(mat$Type,mat_lib$Type)])
+    mat[,Y] <- mat[,Y] *
+      ((mat_lib$sd_y/mat_lib$sd_type_y)[match(mat$Type,mat_lib$Type)])
   }
 
   mat$X <- mat[,X]
@@ -318,16 +325,7 @@ plot_autophagy_competence <- function(competence_data = NULL){
   y_lab <-
     paste0("<b>Autophagosome clearance</b><br><br>",
            "<i>log BFt (WT:VAM6)</i><br>")
-  # x_lab <-
-  #   paste0("<br><b>Autophagosome formation</b><br><br>",
-  #          "<i>log BFt (VAM6:ATG1), DNN-model '",
-  #          dnn_model,"'</i>")
-  # y_lab <-
-  #   paste0("<b>Autophagosome clearance</b><br><br>",
-  #          "<i>log BFt (WT:VAM6), DNN-model '",
-  #          dnn_model,"'</i><br>")
 
-  #if(dnn_model == "30"){
   p <- ggplot2::ggplot(
     competence_data$BF_response,
     ggplot2::aes(
@@ -337,7 +335,6 @@ plot_autophagy_competence <- function(competence_data = NULL){
     ggplot2::geom_hline(yintercept = 0, lty=1, col="black", size=0.1) +
     scico::scale_color_scico(palette = 'lisbon') +
     ggplot2::scale_size(range = c(0, 1.5)) +
-    #geom_path(data=BF_response_ctr, aes(),col="gray",lty=2, alpha = 1) +
     ggplot2::geom_point(
       data=competence_data$BF_response_ctr,
       ggplot2::aes(
@@ -358,14 +355,12 @@ plot_autophagy_competence <- function(competence_data = NULL){
       y = y_lab,
       col="Time",
       size="BF (WT:ATG1)",
-      #title=paste(competence_data$id, competence_data$Library),
       shape="") +
     ggplot2::theme_bw(base_size = 20, base_family = "Helvetica") +
     ggplot2::theme(
       panel.grid.major = ggplot2::element_blank(),
       panel.grid.minor = ggplot2::element_blank(),
       plot.title = ggplot2::element_blank(),
-      #plot.title = ggplot2::element_text(size=20, face="bold"),
       axis.text = ggplot2::element_text(size=18),
       plot.margin = ggplot2::margin(2, 1, 1, 1, "cm"),
       axis.title.y = ggtext::element_markdown(size = 18),
@@ -373,51 +368,7 @@ plot_autophagy_competence <- function(competence_data = NULL){
       legend.text = ggplot2::element_text(size=18, family = "Helvetica"),
       strip.background = ggplot2::element_blank(),
       legend.position = "right")
-  # }else{
-  #   p <- ggplot2::ggplot(
-  #     competence_data$BF_response,
-  #     ggplot2::aes(log_BFt_VAM6.ATG1_22,
-  #                  log_BFt_WT.VAM6_22,
-  #                  col=TimeR)) +
-  #     ggplot2::geom_vline(
-  #       xintercept = 0, lty=1, col="black", size=0.1) +
-  #     ggplot2::geom_hline(
-  #       yintercept = 0, lty=1, col="black", size=0.1) +
-  #     scico::scale_color_scico(palette = 'lisbon') +
-  #     ggplot2::scale_size(range = c(0, 1.5)) +
-  #     ggplot2::geom_point(
-  #       data=competence_data$BF_response_ctr,
-  #       ggplot2::aes(size=log_BFt_WT.ATG1_22, pch="Control"),size=1.8, alpha = 1) +
-  #     ggplot2::geom_path(ggplot2::aes(),col="black",lty=2, alpha = 1) +
-  #     ggplot2::geom_segment(ggplot2::aes(
-  #       xend = log_BFt_VAM6.ATG1_22.shift,
-  #       yend = log_BFt_WT.VAM6_22.shift,
-  #       size=log_BFt_WT.ATG1_22),
-  #       arrow = arrow(
-  #         angle = 35,
-  #         length = unit(0.11, "inches"),
-  #         type = "closed"),
-  #       alpha = 1, size=1.3) +
-  #     ggplot2::labs(
-  #       x = x_lab,
-  #       y = y_lab,
-  #       col = "Time",
-  #       size = "BF (WT:ATG1)",
-  #       #title=paste(competence_data$id, competence_data$Library),
-  #       shape="") +
-  #     ggplot2::theme_bw(base_size = 20, base_family = "Helvetica") +
-  #     ggplot2::theme(
-  #       panel.grid.major = ggplot2::element_blank(),
-  #       panel.grid.minor = ggplot2::element_blank(),
-  #       plot.title = ggplot2::element_blank(),
-  #       #plot.title = ggplot2::element_text(size=20, face="bold"),
-  #       axis.text = ggplot2::element_text(size=18),
-  #       plot.margin = ggplot2::margin(2, 1, 1, 1, "cm"),
-  #       axis.title.y = ggtext::element_markdown(size = 18),
-  #       axis.title.x = ggtext::element_markdown(size = 18),
-  #       legend.text = ggplot2::element_text(size=18),
-  #       legend.position = "right")
-  # }
+
   return(p)
 
 
@@ -425,7 +376,6 @@ plot_autophagy_competence <- function(competence_data = NULL){
 
 plot_response_kinetics_multi <- function(
     response_data = NULL,
-    #primary_identifiers = "AAC1 / YMR056C",
     primary_identifiers = NULL,
     custom_scale_limits = TRUE,
     user_x = "T50 +N",
@@ -440,12 +390,7 @@ plot_response_kinetics_multi <- function(
   }
 
   # Kinetic parameters
-  #Select one or several IDs for text repel
-  #id=IDs_unique[grep("RTG",IDs_unique)]
-
   #Select x and y
-  #X <- unique(response_data[['ds_parms']]$Parameter)[12]
-  #Y <- unique(response_data[['ds_parms']]$Parameter)[11]
   X <- user_x
   Y <- user_y
 
@@ -453,25 +398,11 @@ plot_response_kinetics_multi <- function(
   for(i in primary_identifiers){
     y_pred <- response_data[['ds_curvefits']] |>
       dplyr::filter(primary_identifier == i)
-      #subset(gsub("NA ", "", paste(Gene, ORF)) == i)
+
     #If mutant in rec plate, only evaluate rec mutants
     if(any(grepl("Rec",y_pred$Plate))){
       y_pred <- y_pred[which(grepl("Rec",y_pred$Plate)),]
     }
-    #Find representative response
-    y_pred <- y_pred |>
-      dplyr::group_by(Time) |>
-      dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) |>
-      dplyr::group_by(Plate, Position) |>
-      dplyr::mutate(d=mean(d))
-    y_pred <- y_pred[which(y_pred$d==min(y_pred$d)),]
-    # y_raw <- df_DNN_preds |>
-    #   subset(paste(Plate, Position) %in% paste(y_pred$Plate, y_pred$Position)) |>
-    #   dplyr::group_by(Plate, Position) |>
-    #   dplyr::mutate(NCells = mean(NCells ))
-    # y_raw <- y_raw[which(y_raw$NCells==max(y_raw$NCells)),]
-    # y_pred <- y_pred |> subset(paste(Plate, Position) %in% paste(y_raw$Plate, y_raw$Position))
-
     y_pred <- y_pred |>
       dplyr::group_by(Time) |>
       dplyr::mutate(d=abs(P1_30_fit-median(P1_30_fit))) |>
@@ -602,6 +533,8 @@ plot_response_kinetics <- function(response_data = NULL){
   double_sigmoidal_model <- NULL
   slibrary <- NULL
   id = NULL
+
+
   if(!is.null(response_data)){
     if("y_pred" %in% names(response_data)){
       y_pred <- response_data$y_pred
